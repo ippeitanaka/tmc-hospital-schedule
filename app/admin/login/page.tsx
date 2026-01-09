@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Hospital } from "lucide-react"
+import { GraduationCap } from "lucide-react"
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const router = useRouter()
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -19,18 +19,18 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // パスワードチェック（環境変数で設定されたパスワードを使用）
+      // 教員用パスワードチェック
       const response = await fetch("/api/auth/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, type: "teacher" }),
       })
 
       if (response.ok) {
         // 認証成功 - Cookieは自動的に設定される
-        router.push("/")
+        router.push("/teacher")
         router.refresh()
       } else {
         const data = await response.json()
@@ -44,17 +44,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
-              <Hospital className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
+              <GraduationCap className="h-8 w-8 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">病院実習スケジュール管理</CardTitle>
+          <CardTitle className="text-2xl font-bold">教員用ログイン</CardTitle>
           <CardDescription>
-            パスワードを入力してログインしてください
+            教員用パスワードを入力してください
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -66,7 +66,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="パスワードを入力"
+                placeholder="教員用パスワードを入力"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
@@ -90,10 +90,10 @@ export default function LoginPage() {
               <Button
                 type="button"
                 variant="link"
-                onClick={() => router.push("/admin/login")}
+                onClick={() => router.push("/login")}
                 className="text-sm"
               >
-                教員の方はこちら
+                一般ユーザーとしてログイン
               </Button>
             </div>
           </form>

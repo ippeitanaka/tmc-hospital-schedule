@@ -11,8 +11,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Admin routes require admin auth
-  if (pathname.startsWith("/admin")) {
+  // Teacher and Admin routes require admin auth
+  if (pathname.startsWith("/teacher") || pathname.startsWith("/admin")) {
     if (adminAuth !== "true") {
       return NextResponse.redirect(new URL("/admin/login", request.url))
     }

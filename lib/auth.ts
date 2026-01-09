@@ -1,7 +1,7 @@
 // 認証ユーティリティ
 
-export const AUTH_COOKIE_NAME = 'tmc_app_auth'
-export const TEACHER_AUTH_COOKIE_NAME = 'tmc_teacher_auth'
+export const AUTH_COOKIE_NAME = 'viewer_auth'
+export const TEACHER_AUTH_COOKIE_NAME = 'admin_auth'
 
 // クッキーに認証状態を保存
 export function setAuthCookie(name: string, value: string) {

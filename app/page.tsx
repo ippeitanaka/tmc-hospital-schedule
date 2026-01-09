@@ -63,7 +63,7 @@ function HospitalInternshipManagerContent() {
   }, [])
 
   const handleAuth = () => {
-    setAuthCookie("tmc_app_auth", "true")
+    setAuthCookie("viewer_auth", "true")
     setAuthenticated(true)
   }
 

@@ -92,12 +92,12 @@ export default function TeacherPage() {
   }, [authenticated, selectedDate, selectedPeriod])
 
   const handleAuth = () => {
-    setAuthCookie("tmc_teacher_auth", "true")
+    setAuthCookie("admin_auth", "true")
     setAuthenticated(true)
   }
 
   const handleLogout = () => {
-    removeAuthCookie("tmc_teacher_auth")
+    removeAuthCookie("admin_auth")
     setAuthenticated(false)
     router.push("/")
   }
