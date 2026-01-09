@@ -480,8 +480,17 @@ function HospitalInternshipManagerContent() {
               </CardContent>
             </Card>
           </div>
-        ) : (
-          <div className="space-y-4">
+        ) : null}
+        
+        {showDetails && (
+          <div className="space-y-4"
+            style={{
+              minHeight: '200px',
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1
+            }}
+          >
             {searchHospital && !searchName ? (
               <Card className="border-2">
                 <CardHeader>
