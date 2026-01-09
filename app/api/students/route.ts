@@ -11,9 +11,11 @@ export async function GET(request: Request) {
     const supabase = await getSupabaseServerClient()
 
     // デバッグ: schedulesテーブルの最初の5件を確認
+    let sampleDates: string[] = []
     if (!name && !hospital && !date) {
       const { data: sampleSchedules } = await supabase.from("schedules").select("schedule_date").limit(5)
-      console.log('[API] Sample schedule dates from DB:', sampleSchedules?.map(s => s.schedule_date))
+      sampleDates = sampleSchedules?.map(s => s.schedule_date) || []
+      console.log('[API] Sample schedule dates from DB:', sampleDates)
     }
 
     // 学生データを取得
@@ -104,7 +106,28 @@ export async function GET(request: Request) {
 
     console.log('[API] Returning students:', filteredStudents.length, 'Total schedules:', schedules?.length || 0)
 
-    return NextResponse.json({ students: filteredStudents })
+    // デバッグ情報を含める（開発環境のみ）
+    const response: any = { students: filteredStudents }
+    if (sampleDates.length > 0) {
+      response.sampleDates = sampleDates
+    }
+    if (date) {
+      const dateParts = date.split(/[-/]/)
+      const formats = [
+        `${dateParts[0]}/${dateParts[1]}/${dateParts[2]}`,
+        `${dateParts[0]}-${dateParts[1]}-${dateParts[2]}`,
+        `${parseInt(dateParts[1])}/${parseInt(dateParts[2])}`,
+        `${dateParts[1]}/${dateParts[2]}`,
+      ]
+      response.debug = {
+        searchFormats: formats,
+        schedulesFound: schedules?.length || 0,
+        studentsReturned: filteredStudents.length,
+        sampleScheduleDates: schedules?.slice(0, 3).map(s => s.schedule_date) || []
+      }
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error("Error fetching students:", error)
     return NextResponse.json({ students: [] })
