@@ -388,7 +388,10 @@ function HospitalInternshipManagerContent() {
             </div>
             {(searchName || searchHospital || searchDate) && (
               <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">{students.length}件の結果が見つかりました</p>
+                <div className="flex-1">
+                  <div className="text-2xl font-bold text-primary mb-1">{students.length}件</div>
+                  <p className="text-sm text-muted-foreground">の結果が見つかりました</p>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -483,14 +486,19 @@ function HospitalInternshipManagerContent() {
         ) : null}
         
         {showDetails && (
-          <div className="space-y-4"
+          <div className="space-y-4 w-full"
             style={{
               minHeight: '200px',
               display: 'block',
               visibility: 'visible',
-              opacity: 1
+              opacity: 1,
+              position: 'relative',
+              zIndex: 1
             }}
           >
+            <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded mb-4 text-center font-bold">
+              検索結果: {students.length}名 (showDetails: {showDetails ? 'true' : 'false'})
+            </div>
             {searchHospital && !searchName ? (
               <Card className="border-2">
                 <CardHeader>
