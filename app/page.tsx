@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Search, Hospital, Calendar, Users, Building2, Clock, GraduationCap } from "lucide-react"
+import { Search, Hospital, Calendar, Users, Building2, Clock, GraduationCap, CheckCircle2 } from "lucide-react"
 import { AuthDialog } from "@/components/auth-dialog"
 import { setAuthCookie, isAppAuthenticated } from "@/lib/auth"
 
