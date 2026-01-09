@@ -10,6 +10,12 @@ export async function GET(request: Request) {
 
     const supabase = await getSupabaseServerClient()
 
+    // デバッグ: schedulesテーブルの最初の5件を確認
+    if (!name && !hospital && !date) {
+      const { data: sampleSchedules } = await supabase.from("schedules").select("schedule_date").limit(5)
+      console.log('[API] Sample schedule dates from DB:', sampleSchedules?.map(s => s.schedule_date))
+    }
+
     // 学生データを取得
     let studentsQuery = supabase.from("students").select("*").order("id")
 
@@ -56,14 +62,18 @@ export async function GET(request: Request) {
         `${month}/${day}`,                   // 02/11
       ]
       
+      console.log('[API] Date search formats:', formats)
       schedulesQuery = schedulesQuery.in("schedule_date", formats)
     }
 
     const { data: schedules, error: schedulesError } = await schedulesQuery
 
     if (schedulesError) {
+      console.error('[API] Schedules error:', schedulesError)
       throw schedulesError
     }
+
+    console.log('[API] Schedules found:', schedules?.length || 0, 'Date filter:', date || 'none')
 
     // 学生データとスケジュールを結合
     const studentsWithSchedules =
@@ -91,6 +101,8 @@ export async function GET(request: Request) {
 
     // 日付フィルタリングが指定されている場合、該当する学生のみ返す
     const filteredStudents = date ? studentsWithSchedules.filter((s) => s.schedule.length > 0) : studentsWithSchedules
+
+    console.log('[API] Returning students:', filteredStudents.length, 'Total schedules:', schedules?.length || 0)
 
     return NextResponse.json({ students: filteredStudents })
   } catch (error) {
