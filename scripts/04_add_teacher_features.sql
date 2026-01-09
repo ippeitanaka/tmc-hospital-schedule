@@ -38,6 +38,14 @@ CREATE INDEX IF NOT EXISTS idx_attendance_date_period ON attendance_records(atte
 ALTER TABLE attendance_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
+-- 既存のポリシーを削除（エラー回避）
+DROP POLICY IF EXISTS "Allow public read access on attendance_records" ON attendance_records;
+DROP POLICY IF EXISTS "Allow public read access on app_settings" ON app_settings;
+DROP POLICY IF EXISTS "Allow public insert on attendance_records" ON attendance_records;
+DROP POLICY IF EXISTS "Allow public update on attendance_records" ON attendance_records;
+DROP POLICY IF EXISTS "Allow public delete on attendance_records" ON attendance_records;
+DROP POLICY IF EXISTS "Allow public update on app_settings" ON app_settings;
+
 -- 全ユーザーに読み取り権限を付与
 CREATE POLICY "Allow public read access on attendance_records" ON attendance_records FOR SELECT USING (true);
 CREATE POLICY "Allow public read access on app_settings" ON app_settings FOR SELECT USING (true);
