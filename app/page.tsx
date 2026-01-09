@@ -324,9 +324,11 @@ function HospitalInternshipManagerContent() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">救急救命士学科 病院実習管理システム</h1>
-              <p className="text-muted-foreground">23期生 実習スケジュール・巡回記録管理（Supabase版）</p>
+            <div className="flex items-center gap-6">
+              <img src="/images/10.png" alt="Emergency Medical Mascot" className="w-20 h-20 object-contain" />
+              <div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">TMC救急救命士学科 病院実習スケジュール</h1>
+              </div>
             </div>
             <div className="flex gap-2">
               {importMessage && (
@@ -354,7 +356,7 @@ function HospitalInternshipManagerContent() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
+          <Card className="relative overflow-hidden">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -363,6 +365,11 @@ function HospitalInternshipManagerContent() {
                 </div>
                 <Users className="h-8 w-8 text-blue-500" />
               </div>
+              <img
+                src="/images/9.png"
+                alt="Medical Mascot"
+                className="absolute bottom-0 right-0 w-16 h-16 opacity-20 object-contain"
+              />
             </CardContent>
           </Card>
 
@@ -390,7 +397,7 @@ function HospitalInternshipManagerContent() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative overflow-hidden">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -399,6 +406,11 @@ function HospitalInternshipManagerContent() {
                 </div>
                 <CheckCircle2 className="h-8 w-8 text-orange-500" />
               </div>
+              <img
+                src="/images/7.png"
+                alt="Emergency Mascot"
+                className="absolute bottom-0 right-0 w-16 h-16 opacity-20 object-contain"
+              />
             </CardContent>
           </Card>
         </div>
@@ -537,7 +549,11 @@ function HospitalInternshipManagerContent() {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <img
+                      src="/images/10.png"
+                      alt="No internships today"
+                      className="w-24 h-24 mx-auto mb-4 opacity-50"
+                    />
                     <p className="text-lg font-medium text-foreground mb-2">本日の実習はありません</p>
                     <p className="text-muted-foreground">検索フィルターを使用して学生や施設の情報を確認できます</p>
                   </div>
