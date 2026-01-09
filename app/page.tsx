@@ -47,6 +47,8 @@ function HospitalInternshipManagerContent() {
   const [searchName, setSearchName] = useState("")
   const [searchHospital, setSearchHospital] = useState("")
   const [searchDate, setSearchDate] = useState("")
+  const [debouncedSearchName, setDebouncedSearchName] = useState("")
+  const [debouncedSearchHospital, setDebouncedSearchHospital] = useState("")
   const [todayInternships, setTodayInternships] = useState<
     Record<string, Array<{ name: string; kana: string; id: number }>>
   >({})
@@ -92,12 +94,22 @@ function HospitalInternshipManagerContent() {
     loadData()
   }, [authenticated])
 
+  // デバウンス処理: 入力が止まってから500ms後に検索を実行
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchName(searchName)
+      setDebouncedSearchHospital(searchHospital)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchName, searchHospital])
+
   useEffect(() => {
     async function fetchStudents() {
       try {
         const params = new URLSearchParams()
-        if (searchName) params.append("name", searchName)
-        if (searchHospital) params.append("hospital", searchHospital)
+        if (debouncedSearchName) params.append("name", debouncedSearchName)
+        if (debouncedSearchHospital) params.append("hospital", debouncedSearchHospital)
         if (searchDate) params.append("date", searchDate)
 
         console.log("[v0] Fetching students with params:", params.toString())
@@ -123,8 +135,8 @@ function HospitalInternshipManagerContent() {
         }
         setStudents(data.students || [])
 
-        const shouldShowDetails = Boolean(searchName || searchHospital || searchDate)
-        console.log('[v0] Setting showDetails to:', shouldShowDetails, { searchName, searchHospital, searchDate })
+        const shouldShowDetails = Boolean(debouncedSearchName || debouncedSearchHospital || searchDate)
+        console.log('[v0] Setting showDetails to:', shouldShowDetails, { debouncedSearchName, debouncedSearchHospital, searchDate })
         setShowDetails(shouldShowDetails)
       } catch (error) {
         console.error("学生データの取得に失敗:", error)
@@ -135,7 +147,7 @@ function HospitalInternshipManagerContent() {
     if (!loading && authenticated) {
       fetchStudents()
     }
-  }, [searchName, searchHospital, searchDate, loading, authenticated])
+  }, [debouncedSearchName, debouncedSearchHospital, searchDate, loading, authenticated])
 
   useEffect(() => {
     async function fetchTodayInternships() {
@@ -390,7 +402,10 @@ function HospitalInternshipManagerContent() {
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex-1">
                   <div className="text-2xl font-bold text-primary mb-1">{students.length}件</div>
-                  <p className="text-sm text-muted-foreground">の結果が見つかりました</p>
+                  <p className="text-sm text-muted-foreground">
+                    の結果が見つかりました
+                    {(searchName && !debouncedSearchName) && <span className="ml-2">(検索中...)</span>}
+                  </p>
                 </div>
                 <Button
                   variant="outline"
@@ -497,7 +512,14 @@ function HospitalInternshipManagerContent() {
             }}
           >
             <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded mb-4 text-center font-bold">
-              検索結果: {students.length}名 (showDetails: {showDetails ? 'true' : 'false'})
+              <div className="text-lg">検索結果: {students.length}名</div>
+              <div className="text-sm mt-2">
+                showDetails: {showDetails ? 'true' : 'false'}<br/>
+                入力中: "{searchName}"<br/>
+                検索中: "{debouncedSearchName}"<br/>
+                hospital: "{searchHospital}" / "{debouncedSearchHospital}"<br/>
+                date: "{searchDate}"
+              </div>
             </div>
             {searchHospital && !searchName ? (
               <Card className="border-2">
