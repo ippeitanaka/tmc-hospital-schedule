@@ -261,84 +261,88 @@ function HospitalInternshipManagerContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-6">
-              <img src="/images/10.png" alt="Emergency Medical Mascot" className="w-20 h-20 object-contain" />
-              <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">TMC救急救命士学科 病院実習スケジュール</h1>
+      <header className="border-b bg-card sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+              <img src="/images/10.png" alt="TMC" className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 object-contain" />
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-lg md:text-2xl lg:text-3xl font-bold text-foreground leading-tight">
+                  <span className="block sm:inline">TMC救急救命士学科</span>
+                  <span className="hidden sm:inline"> </span>
+                  <span className="block sm:inline">病院実習スケジュール</span>
+                </h1>
               </div>
             </div>
             <Button
               onClick={() => router.push("/teacher")}
               size="sm"
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3"
             >
-              <GraduationCap className="h-4 w-4" />
-              教員用ページ
+              <GraduationCap className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">教員用</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card className="relative overflow-hidden">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6 pb-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">学生総数</p>
-                  <p className="text-2xl font-bold text-foreground">{stats.studentCount}</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">学生総数</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.studentCount}</p>
                 </div>
-                <Users className="h-8 w-8 text-blue-500" />
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex-shrink-0" />
               </div>
               <img
                 src="/images/9.png"
-                alt="Medical Mascot"
-                className="absolute bottom-0 right-0 w-16 h-16 opacity-20 object-contain"
+                alt=""
+                className="absolute -bottom-1 -right-1 w-12 h-12 sm:w-14 sm:h-14 opacity-10 object-contain pointer-events-none"
               />
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6 pb-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">実習施設数</p>
-                  <p className="text-2xl font-bold text-foreground">{stats.hospitalCount}</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">施設数</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.hospitalCount}</p>
                 </div>
-                <Hospital className="h-8 w-8 text-green-500" />
+                <Hospital className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6 pb-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">実習期間</p>
-                  <p className="text-2xl font-bold text-foreground">{stats.dateCount}日</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">実習期間</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.dateCount}日</p>
                 </div>
-                <Calendar className="h-8 w-8 text-purple-500" />
+                <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="relative overflow-hidden">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6 pb-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">巡回実施済み</p>
-                  <p className="text-2xl font-bold text-foreground">{stats.visitCount}</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">巡回済</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.visitCount}</p>
                 </div>
-                <CheckCircle2 className="h-8 w-8 text-orange-500" />
+                <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500 flex-shrink-0" />
               </div>
               <img
                 src="/images/7.png"
-                alt="Emergency Mascot"
-                className="absolute bottom-0 right-0 w-16 h-16 opacity-20 object-contain"
+                alt=""
+                className="absolute -bottom-1 -right-1 w-12 h-12 sm:w-14 sm:h-14 opacity-10 object-contain pointer-events-none"
               />
             </CardContent>
           </Card>
@@ -352,36 +356,39 @@ function HospitalInternshipManagerContent() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">学生氏名・ふりがな</label>
+                <label className="text-xs sm:text-sm font-medium text-muted-foreground mb-1.5 sm:mb-2 block">氏名・ふりがな</label>
                 <Input
-                  placeholder="例: 田中 または ﾀﾅｶ"
+                  placeholder="田中"
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
+                  className="text-sm"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">実習施設名</label>
+                <label className="text-xs sm:text-sm font-medium text-muted-foreground mb-1.5 sm:mb-2 block">実習施設</label>
                 <Input
-                  placeholder="例：済生会"
+                  placeholder="済生会"
                   value={searchHospital}
                   onChange={(e) => setSearchHospital(e.target.value)}
+                  className="text-sm"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">日付</label>
+              <div className="sm:col-span-2 md:col-span-1">
+                <label className="text-xs sm:text-sm font-medium text-muted-foreground mb-1.5 sm:mb-2 block">日付</label>
                 <Input
                   type="date"
                   value={searchDate}
                   onChange={(e) => setSearchDate(e.target.value)}
+                  className="text-sm"
                 />
               </div>
             </div>
             {(searchName || searchHospital || searchDate) && (
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {students.length}件の結果が見つかりました
+              <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  <span className="font-semibold text-primary">{students.length}件</span>の結果
                   {(searchName && !debouncedSearchName) && <span className="ml-2 text-primary">(検索中...)</span>}
                 </p>
                 <Button
@@ -392,8 +399,9 @@ function HospitalInternshipManagerContent() {
                     setSearchHospital("")
                     setSearchDate("")
                   }}
+                  className="text-xs sm:text-sm w-full sm:w-auto"
                 >
-                  フィルターをクリア
+                  クリア
                 </Button>
               </div>
             )}
@@ -418,13 +426,13 @@ function HospitalInternshipManagerContent() {
 
         {!showDetails ? (
           <div>
-            <Card className="mb-6 border-primary/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Clock className="h-6 w-6 text-primary" />
-                  本日の病院実習状況
+            <Card className="mb-4 sm:mb-6 border-primary/50">
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-2xl">
+                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+                  <span>本日の病院実習状況</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   {new Date().toLocaleDateString("ja-JP", {
                     year: "numeric",
                     month: "long",
@@ -435,24 +443,24 @@ function HospitalInternshipManagerContent() {
               </CardHeader>
               <CardContent>
                 {Object.keys(todayInternships).length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     {Object.entries(todayInternships).map(([hospital, students]) => (
                       <Card key={hospital} className="border-2 hover:border-primary/50 transition-colors">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <Building2 className="h-5 w-5 text-green-500" />
-                            {hospital}
+                        <CardHeader className="pb-2 sm:pb-3">
+                          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                            <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
+                            <span className="truncate">{hospital}</span>
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="space-y-2">
-                            <p className="text-xs text-muted-foreground mb-2">実習生 ({students.length}名)</p>
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <p className="text-xs text-muted-foreground mb-1.5 sm:mb-2">実習生 ({students.length}名)</p>
                             {students.map((student) => (
-                              <div key={student.id} className="flex items-center gap-2 p-2 rounded bg-accent/50">
-                                <Users className="h-4 w-4 text-blue-500" />
-                                <div>
-                                  <p className="font-medium text-sm">{student.name}</p>
-                                  <p className="text-xs text-muted-foreground">{student.kana}</p>
+                              <div key={student.id} className="flex items-center gap-2 p-1.5 sm:p-2 rounded bg-accent/50">
+                                <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-xs sm:text-sm truncate">{student.name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{student.kana}</p>
                                 </div>
                               </div>
                             ))}
@@ -462,14 +470,14 @@ function HospitalInternshipManagerContent() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12">
+                  <div className="text-center py-8 sm:py-12">
                     <img
                       src="/images/10.png"
-                      alt="No internships today"
-                      className="w-24 h-24 mx-auto mb-4 opacity-50"
+                      alt=""
+                      className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-3 sm:mb-4 opacity-50"
                     />
-                    <p className="text-lg font-medium text-foreground mb-2">本日の実習はありません</p>
-                    <p className="text-muted-foreground">検索フィルターを使用して学生や施設の情報を確認できます</p>
+                    <p className="text-base sm:text-lg font-medium text-foreground mb-1 sm:mb-2">本日の実習はありません</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground px-4">検索フィルターで学生情報を確認できます</p>
                   </div>
                 )}
               </CardContent>
@@ -558,38 +566,39 @@ function HospitalInternshipManagerContent() {
                 if (!searchDate) {
                   return students.map((student) => (
                     <Card key={student.id} className="border-2">
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <CardTitle className="text-xl">
+                      <CardHeader className="pb-3 sm:pb-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="text-base sm:text-lg md:text-xl break-words">
                               {student.name}
-                              <span className="text-sm font-normal text-muted-foreground ml-3">({student.kana})</span>
                             </CardTitle>
-                            <CardDescription className="mt-2">
-                              <span className="inline-block mr-4">
-                                <Hospital className="inline h-4 w-4 mr-1" />
-                                {student.hospital}
-                              </span>
-                              <span className="inline-block mr-4">学籍番号: {student.studentNumber}</span>
-                              <span className="inline-block mr-4">
-                                {student.dayNight} {student.group}班
-                              </span>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-1">({student.kana})</p>
+                            <CardDescription className="mt-2 sm:mt-3 space-y-1">
+                              <div className="flex items-start gap-1.5">
+                                <Hospital className="h-3.5 w-3.5 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0 text-green-600" />
+                                <span className="text-xs sm:text-sm break-words">{student.hospital}</span>
+                              </div>
+                              <div className="text-xs sm:text-sm">
+                                <span className="inline-block">学籍: {student.studentNumber}</span>
+                                <span className="mx-2">•</span>
+                                <span className="inline-block">{student.dayNight}クラス {student.group}班</span>
+                              </div>
                             </CardDescription>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                           {student.schedule.length > 0 ? (
                             <div className="space-y-2">
-                              <h4 className="font-semibold text-sm text-muted-foreground mb-3">実習スケジュール</h4>
-                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                              <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">実習スケジュール</h4>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-3">
                                 {student.schedule.map((entry, idx) => (
                                   <div
                                     key={idx}
-                                    className="border-2 rounded-lg p-3 hover:bg-accent/50 transition-all hover:shadow-md"
+                                    className="border-2 rounded-lg p-2 sm:p-2.5 hover:bg-accent/50 transition-all"
                                   >
-                                    <div className="text-xs font-medium text-muted-foreground mb-2">{entry.date}</div>
+                                    <div className="text-xs font-medium text-muted-foreground mb-1.5 truncate">{entry.date}</div>
                                     <Badge
                                       className={`${getSymbolColor(entry.symbol)} text-white w-full justify-center`}
                                     >
@@ -667,13 +676,13 @@ function HospitalInternshipManagerContent() {
                                     key={idx}
                                     className="border-2 rounded-lg p-3 hover:bg-accent/50 transition-all hover:shadow-md"
                                   >
-                                    <div className="text-xs font-medium text-muted-foreground mb-2">{entry.date}</div>
+                                    <div className="text-xs font-medium text-muted-foreground mb-1.5 truncate">{entry.date}</div>
                                     <Badge
-                                      className={`${getSymbolColor(entry.symbol)} text-white w-full justify-center`}
+                                      className={`${getSymbolColor(entry.symbol)} text-white w-full justify-center text-xs sm:text-sm py-0.5 sm:py-1`}
                                     >
                                       {entry.symbol}
                                     </Badge>
-                                    <div className="text-xs mt-2 text-muted-foreground">
+                                    <div className="text-xs mt-1.5 text-muted-foreground truncate">
                                       {getSymbolDescription(entry.symbol)}
                                     </div>
                                   </div>
@@ -681,7 +690,7 @@ function HospitalInternshipManagerContent() {
                               </div>
                             </div>
                           ) : (
-                            <p className="text-sm text-muted-foreground">スケジュールデータがありません</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">スケジュールデータがありません</p>
                           )}
                         </div>
                       </CardContent>
@@ -695,10 +704,10 @@ function HospitalInternshipManagerContent() {
 
         {students.length === 0 && showDetails && (
           <Card>
-            <CardContent className="py-12 text-center">
-              <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-lg font-medium text-foreground mb-2">該当する学生が見つかりません</p>
-              <p className="text-muted-foreground">検索条件を変更してください</p>
+            <CardContent className="py-8 sm:py-12 text-center px-4">
+              <Search className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
+              <p className="text-base sm:text-lg font-medium text-foreground mb-1 sm:mb-2">該当する学生が見つかりません</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">検索条件を変更してください</p>
             </CardContent>
           </Card>
         )}
