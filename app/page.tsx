@@ -107,6 +107,14 @@ function HospitalInternshipManagerContent() {
         }
         const data = await res.json()
         console.log("[v0] Students data loaded:", data)
+        console.log("[v0] Number of students returned:", data.students?.length || 0)
+        if (data.students && data.students.length > 0) {
+          const dayNightCounts = data.students.reduce((acc: any, s: any) => {
+            acc[s.dayNight || 'unknown'] = (acc[s.dayNight || 'unknown'] || 0) + 1
+            return acc
+          }, {})
+          console.log("[v0] Students by class:", dayNightCounts)
+        }
         if (data.sampleDates) {
           console.log("[v0] Sample dates from DB:", data.sampleDates)
         }

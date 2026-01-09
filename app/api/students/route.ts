@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     let studentsQuery = supabase.from("students").select("*").order("id")
 
     if (name) {
+      console.log('[API] Searching for name:', name)
       studentsQuery = studentsQuery.or(`name.ilike.%${name}%,kana.ilike.%${name}%`)
     }
 
@@ -37,6 +38,23 @@ export async function GET(request: Request) {
 
     if (studentsError) {
       throw studentsError
+    }
+
+    console.log('[API] Students found:', students?.length || 0)
+    if (students && students.length > 0) {
+      const dayNightCounts = students.reduce((acc: any, s: any) => {
+        acc[s.day_night || 'unknown'] = (acc[s.day_night || 'unknown'] || 0) + 1
+        return acc
+      }, {})
+      console.log('[API] Students by day_night:', dayNightCounts)
+      if (name) {
+        console.log('[API] First 3 matching students:', students.slice(0, 3).map(s => ({
+          id: s.id,
+          name: s.name,
+          kana: s.kana,
+          day_night: s.day_night
+        })))
+      }
     }
 
     // 各学生のスケジュールを取得
