@@ -40,19 +40,9 @@ export async function GET(request: Request) {
 // 出席記録を追加・更新
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    console.log("=== POST /api/attendance ===")
-    console.log("Received body:", body)
-    
-    const { studentNumber, date, period, status } = body
+    const { studentNumber, date, period, status } = await request.json()
 
     if (!studentNumber || !date || period === undefined || status === undefined) {
-      console.log("Missing parameters:", {
-        hasStudentNumber: !!studentNumber,
-        hasDate: !!date,
-        hasPeriod: period !== undefined,
-        hasStatus: status !== undefined,
-      })
       return NextResponse.json({ error: "必須パラメータが不足しています" }, { status: 400 })
     }
 

@@ -152,13 +152,7 @@ export default function TeacherPage() {
 
   const updateAttendance = async (studentNumber: string, status: number) => {
     try {
-      console.log("=== updateAttendance called ===")
-      console.log("studentNumber:", studentNumber)
-      console.log("status:", status)
-      console.log("selectedDate:", selectedDate)
-      console.log("selectedPeriod:", selectedPeriod)
-
-      const response = await fetch("/api/attendance", {
+      await fetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -169,24 +163,16 @@ export default function TeacherPage() {
         }),
       })
 
-      const result = await response.json()
-      console.log("API response:", result)
-
       // ローカルステートを更新
-      setAttendanceRecords((prev) => {
-        console.log("Previous attendanceRecords:", prev)
-        const newRecords = {
-          ...prev,
-          [studentNumber]: {
-            student_number: studentNumber,
-            attendance_date: selectedDate,
-            period: selectedPeriod,
-            status,
-          },
-        }
-        console.log("New attendanceRecords:", newRecords)
-        return newRecords
-      })
+      setAttendanceRecords((prev) => ({
+        ...prev,
+        [studentNumber]: {
+          student_number: studentNumber,
+          attendance_date: selectedDate,
+          period: selectedPeriod,
+          status,
+        },
+      }))
     } catch (error) {
       console.error("出席記録の更新に失敗:", error)
       alert("出席記録の更新に失敗しました")
