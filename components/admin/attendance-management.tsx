@@ -26,10 +26,12 @@ export default function AttendanceManagement() {
   const [loading, setLoading] = useState(false)
 
   const fetchAttendance = async () => {
+    console.log("[v0] Fetching attendance for date:", date, "period:", period)
     setLoading(true)
     try {
       const response = await fetch(`/api/attendance?date=${date}&period=${period}`)
       const data = await response.json()
+      console.log("[v0] Attendance data received:", data)
       setSchoolStudents(data.schoolStudents || [])
       setHospitalStudents(data.hospitalStudents || [])
     } catch (error) {
@@ -60,7 +62,7 @@ export default function AttendanceManagement() {
     if (date && period) {
       fetchAttendance()
     }
-  }, [])
+  }, [date, period])
 
   const statusButtons: AttendanceStatus[] = ["出席", "欠席", "遅刻", "早退", "公欠"]
 

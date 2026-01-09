@@ -7,48 +7,116 @@ export async function GET(request: Request) {
     const date = searchParams.get("date")
     const period = searchParams.get("period")
 
+    console.log("[v0] Attendance API called with date:", date, "period:", period)
+
     if (!date || !period) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
     }
 
-    const supabase = getSupabaseServerClient()
+    const supabase = await getSupabaseServerClient()
 
-    // Get all students with their schedules for the date
+    const [year, month, day] = date.split("-")
+    const dbDate = `${year}/${Number.parseInt(month)}/${Number.parseInt(day)}`
+
+    console.log("[v0] Searching for date:", dbDate)
+
+    const { data: schedules, error: schedulesError } = await supabase
+      .from("schedules")
+      .select("*")
+      .eq("schedule_date", dbDate)
+
+    console.log("[v0] Schedules found:", schedules?.length || 0)
+    if (schedules && schedules.length > 0) {
+      console.log("[v0] First schedule sample:", JSON.stringify(schedules[0]))
+      console.log("[v0] Schedule keys:", Object.keys(schedules[0]))
+    }
+
+    if (schedulesError) {
+      console.error("[v0] Schedules query error:", schedulesError)
+      throw schedulesError
+    }
+
+    if (!schedules || schedules.length === 0) {
+      console.log("[v0] No schedules found for date:", dbDate)
+      return NextResponse.json({
+        schoolStudents: [],
+        hospitalStudents: [],
+      })
+    }
+
+    const studentSymbolMap = new Map()
+    schedules.forEach((schedule: any) => {
+      const studentNum = schedule.student_number
+      const symbol = schedule.symbol
+      console.log("[v0] Processing schedule - student_number:", studentNum, "symbol:", symbol)
+      if (studentNum) {
+        studentSymbolMap.set(studentNum, symbol)
+      }
+    })
+
+    console.log("[v0] Unique students:", studentSymbolMap.size)
+    console.log("[v0] Student numbers:", Array.from(studentSymbolMap.keys()).slice(0, 5))
+
+    const studentNumbers = Array.from(studentSymbolMap.keys())
+
+    if (studentNumbers.length === 0) {
+      console.log("[v0] No valid student numbers found")
+      return NextResponse.json({
+        schoolStudents: [],
+        hospitalStudents: [],
+      })
+    }
+
     const { data: students, error: studentsError } = await supabase
       .from("students")
-      .select("*, schedules!inner(schedule_date, symbol)")
-      .eq("schedules.schedule_date", date)
+      .select("*")
+      .in("student_number", studentNumbers)
 
-    if (studentsError) throw studentsError
+    if (studentsError) {
+      console.error("[v0] Students query error:", studentsError)
+      throw studentsError
+    }
 
-    // Get attendance records for this date and period
+    console.log("[v0] Students data retrieved:", students?.length || 0)
+
     const { data: attendanceRecords, error: attendanceError } = await supabase
       .from("attendance")
       .select("*")
       .eq("attendance_date", date)
       .eq("period", Number.parseInt(period))
 
-    if (attendanceError) throw attendanceError
+    if (attendanceError) {
+      console.error("[v0] Attendance query error:", attendanceError)
+    }
 
-    // Separate into school attendance and hospital internship
-    const schoolStudents = students?.filter((s: any) => s.schedules[0]?.symbol === "学") || []
-    const hospitalStudents = students?.filter((s: any) => s.schedules[0]?.symbol === "〇") || []
-
-    // Map attendance records
     const attendanceMap = new Map()
     attendanceRecords?.forEach((record: any) => {
       attendanceMap.set(record.student_number, record.status)
     })
 
+    const schoolStudents: any[] = []
+    const hospitalStudents: any[] = []
+
+    students?.forEach((student: any) => {
+      const symbol = studentSymbolMap.get(student.student_number)
+      const studentWithAttendance = {
+        ...student,
+        symbol,
+        attendance: attendanceMap.get(student.student_number) || null,
+      }
+
+      if (["学", "数", "半", "オリ"].includes(symbol)) {
+        schoolStudents.push(studentWithAttendance)
+      } else if (symbol === "〇") {
+        hospitalStudents.push(studentWithAttendance)
+      }
+    })
+
+    console.log("[v0] Final counts - School:", schoolStudents.length, "Hospital:", hospitalStudents.length)
+
     return NextResponse.json({
-      schoolStudents: schoolStudents.map((s: any) => ({
-        ...s,
-        attendance: attendanceMap.get(s.student_number) || null,
-      })),
-      hospitalStudents: hospitalStudents.map((s: any) => ({
-        ...s,
-        schedules: s.schedules || [],
-      })),
+      schoolStudents,
+      hospitalStudents,
     })
   } catch (error) {
     console.error("[v0] Attendance fetch error:", error)
@@ -61,7 +129,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { studentNumber, date, period, status } = body
 
-    const supabase = getSupabaseServerClient()
+    const supabase = await getSupabaseServerClient()
 
     const { error } = await supabase.from("attendance").upsert(
       {

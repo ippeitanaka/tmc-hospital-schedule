@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { getSupabaseServerClient } from "./supabase/server"
 
 export async function verifyViewerPassword(password: string): Promise<boolean> {
-  const supabase = getSupabaseServerClient()
+  const supabase = await getSupabaseServerClient()
   const { data } = await supabase
     .from("auth_settings")
     .select("setting_value")
@@ -15,7 +15,7 @@ export async function verifyViewerPassword(password: string): Promise<boolean> {
 }
 
 export async function verifyAdminPassword(password: string): Promise<boolean> {
-  const supabase = getSupabaseServerClient()
+  const supabase = await getSupabaseServerClient()
   const { data } = await supabase
     .from("auth_settings")
     .select("setting_value")
@@ -62,7 +62,7 @@ export async function isAdminAuthenticated(): Promise<boolean> {
 }
 
 export async function updatePasswords(viewerPassword: string, adminPassword: string) {
-  const supabase = getSupabaseServerClient()
+  const supabase = await getSupabaseServerClient()
 
   await supabase
     .from("auth_settings")
