@@ -542,57 +542,140 @@ function HospitalInternshipManagerContent() {
                 </CardContent>
               </Card>
             ) : (
-              students.map((student) => (
-                <Card key={student.id} className="border-2">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-xl">
-                          {student.name}
-                          <span className="text-sm font-normal text-muted-foreground ml-3">({student.kana})</span>
-                        </CardTitle>
-                        <CardDescription className="mt-2">
-                          <span className="inline-block mr-4">
-                            <Hospital className="inline h-4 w-4 mr-1" />
-                            {student.hospital}
-                          </span>
-                          <span className="inline-block mr-4">学籍番号: {student.studentNumber}</span>
-                          <span className="inline-block mr-4">
-                            {student.dayNight} {student.group}班
-                          </span>
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {student.schedule.length > 0 ? (
-                        <div className="space-y-2">
-                          <h4 className="font-semibold text-sm text-muted-foreground mb-3">実習スケジュール</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                            {student.schedule.map((entry, idx) => (
-                              <div
-                                key={idx}
-                                className="border-2 rounded-lg p-3 hover:bg-accent/50 transition-all hover:shadow-md"
-                              >
-                                <div className="text-xs font-medium text-muted-foreground mb-2">{entry.date}</div>
-                                <Badge className={`${getSymbolColor(entry.symbol)} text-white w-full justify-center`}>
-                                  {entry.symbol}
-                                </Badge>
-                                <div className="text-xs mt-2 text-muted-foreground">
-                                  {getSymbolDescription(entry.symbol)}
-                                </div>
-                              </div>
-                            ))}
+              (() => {
+                // 日付検索がある場合、学生を分類してソート
+                if (searchDate) {
+                  // 病院実習者（〇）と学校登校者（学・数・半・オリ）を分ける
+                  const hospitalStudents: Student[] = []
+                  const schoolStudents: Student[] = []
+
+                  students.forEach((student) => {
+                    const hasHospitalSymbol = student.schedule.some((s) => s.symbol === "〇")
+                    const hasSchoolSymbol = student.schedule.some((s) =>
+                      ["学", "数", "半", "オリ"].includes(s.symbol),
+                    )
+
+                    if (hasHospitalSymbol) {
+                      hospitalStudents.push(student)
+                    } else if (hasSchoolSymbol) {
+                      schoolStudents.push(student)
+                    }
+                    // 休や明などは除外（どちらにも追加しない）
+                  })
+
+                  // 病院実習者を先に、学校登校者を後に並べる
+                  const sortedStudents = [...hospitalStudents, ...schoolStudents]
+
+                  return sortedStudents.map((student) => (
+                    <Card key={student.id} className="border-2">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-xl">
+                              {student.name}
+                              <span className="text-sm font-normal text-muted-foreground ml-3">({student.kana})</span>
+                            </CardTitle>
+                            <CardDescription className="mt-2">
+                              <span className="inline-block mr-4">
+                                <Hospital className="inline h-4 w-4 mr-1" />
+                                {student.hospital}
+                              </span>
+                              <span className="inline-block mr-4">学籍番号: {student.studentNumber}</span>
+                              <span className="inline-block mr-4">
+                                {student.dayNight} {student.group}班
+                              </span>
+                            </CardDescription>
                           </div>
                         </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">スケジュールデータがありません</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {student.schedule.length > 0 ? (
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-sm text-muted-foreground mb-3">実習スケジュール</h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                                {student.schedule.map((entry, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="border-2 rounded-lg p-3 hover:bg-accent/50 transition-all hover:shadow-md"
+                                  >
+                                    <div className="text-xs font-medium text-muted-foreground mb-2">{entry.date}</div>
+                                    <Badge
+                                      className={`${getSymbolColor(entry.symbol)} text-white w-full justify-center`}
+                                    >
+                                      {entry.symbol}
+                                    </Badge>
+                                    <div className="text-xs mt-2 text-muted-foreground">
+                                      {getSymbolDescription(entry.symbol)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">スケジュールデータがありません</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                } else {
+                  // 日付検索がない場合は通常通り表示
+                  return students.map((student) => (
+                    <Card key={student.id} className="border-2">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-xl">
+                              {student.name}
+                              <span className="text-sm font-normal text-muted-foreground ml-3">({student.kana})</span>
+                            </CardTitle>
+                            <CardDescription className="mt-2">
+                              <span className="inline-block mr-4">
+                                <Hospital className="inline h-4 w-4 mr-1" />
+                                {student.hospital}
+                              </span>
+                              <span className="inline-block mr-4">学籍番号: {student.studentNumber}</span>
+                              <span className="inline-block mr-4">
+                                {student.dayNight} {student.group}班
+                              </span>
+                            </CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {student.schedule.length > 0 ? (
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-sm text-muted-foreground mb-3">実習スケジュール</h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                                {student.schedule.map((entry, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="border-2 rounded-lg p-3 hover:bg-accent/50 transition-all hover:shadow-md"
+                                  >
+                                    <div className="text-xs font-medium text-muted-foreground mb-2">{entry.date}</div>
+                                    <Badge
+                                      className={`${getSymbolColor(entry.symbol)} text-white w-full justify-center`}
+                                    >
+                                      {entry.symbol}
+                                    </Badge>
+                                    <div className="text-xs mt-2 text-muted-foreground">
+                                      {getSymbolDescription(entry.symbol)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">スケジュールデータがありません</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                }
+              })()
             )}
           </div>
         )}
