@@ -37,11 +37,26 @@ export async function GET(request: Request) {
     let schedulesQuery = supabase.from("schedules").select("*").in("student_id", studentIds).order("schedule_date")
 
     if (date) {
-      // YYYY-MM-DD形式とYYYY/MM/DD形式の両方に対応
-      const dateWithSlash = date.replace(/-/g, "/")
-      const dateWithHyphen = date.replace(/\//g, "-")
-      // 両方の形式で検索（いずれかに一致すればOK）
-      schedulesQuery = schedulesQuery.in("schedule_date", [dateWithSlash, dateWithHyphen])
+      // 複数の日付形式に対応
+      // 入力: YYYY-MM-DD (例: 2026-02-11)
+      const dateParts = date.split(/[-/]/)
+      const year = dateParts[0]
+      const month = dateParts[1]
+      const day = dateParts[2]
+      
+      // 変換候補:
+      // 1. YYYY/MM/DD (例: 2026/02/11)
+      // 2. YYYY-MM-DD (例: 2026-02-11)
+      // 3. M/D (例: 2/11)
+      // 4. MM/DD (例: 02/11)
+      const formats = [
+        `${year}/${month}/${day}`,           // 2026/02/11
+        `${year}-${month}-${day}`,           // 2026-02-11
+        `${parseInt(month)}/${parseInt(day)}`, // 2/11
+        `${month}/${day}`,                   // 02/11
+      ]
+      
+      schedulesQuery = schedulesQuery.in("schedule_date", formats)
     }
 
     const { data: schedules, error: schedulesError } = await schedulesQuery
