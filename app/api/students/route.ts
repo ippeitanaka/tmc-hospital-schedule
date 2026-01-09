@@ -56,16 +56,14 @@ export async function GET(request: Request) {
       const month = dateParts[1]
       const day = dateParts[2]
       
+      // データベースの実際の形式: YYYY/M/D (例: 2026/2/11)
       // 変換候補:
-      // 1. YYYY/MM/DD (例: 2026/02/11)
-      // 2. YYYY-MM-DD (例: 2026-02-11)
-      // 3. M/D (例: 2/11)
-      // 4. MM/DD (例: 02/11)
       const formats = [
-        `${year}/${month}/${day}`,           // 2026/02/11
-        `${year}-${month}-${day}`,           // 2026-02-11
-        `${parseInt(month)}/${parseInt(day)}`, // 2/11
-        `${month}/${day}`,                   // 02/11
+        `${year}/${parseInt(month)}/${parseInt(day)}`, // 2026/2/11 (正解)
+        `${year}/${month}/${day}`,                     // 2026/02/11
+        `${year}-${month}-${day}`,                     // 2026-02-11
+        `${parseInt(month)}/${parseInt(day)}`,         // 2/11
+        `${month}/${day}`,                             // 02/11
       ]
       
       console.log('[API] Date search formats:', formats)
