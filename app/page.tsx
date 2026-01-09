@@ -358,9 +358,9 @@ function HospitalInternshipManagerContent() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">日付（部分一致）</label>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">日付</label>
                 <Input
-                  placeholder="例: 1/23 または 2/15"
+                  type="date"
                   value={searchDate}
                   onChange={(e) => setSearchDate(e.target.value)}
                 />

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   GraduationCap,
   Settings,
@@ -38,6 +39,8 @@ interface Student {
   name: string
   kana: string
   hospital: string
+  day_night: string
+  group: string
   schedule: Array<{
     date: string
     symbol: string
@@ -58,6 +61,7 @@ export default function TeacherPage() {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedPeriod, setSelectedPeriod] = useState<number>(1)
+  const [selectedClasses, setSelectedClasses] = useState<string[]>(["A", "B", "N"])
   const [students, setStudents] = useState<Student[]>([])
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceRecord>>({})
   const [visitComments, setVisitComments] = useState<Record<string, string>>({})
@@ -96,6 +100,14 @@ export default function TeacherPage() {
     removeAuthCookie("tmc_teacher_auth")
     setAuthenticated(false)
     router.push("/")
+  }
+
+  const toggleClass = (classValue: string) => {
+    setSelectedClasses((prev) =>
+      prev.includes(classValue)
+        ? prev.filter((c) => c !== classValue)
+        : [...prev, classValue]
+    )
   }
 
   const loadStudentsAndAttendance = async () => {
@@ -307,13 +319,15 @@ export default function TeacherPage() {
     return "bg-gray-200 hover:bg-gray-300"
   }
 
-  // 学校登校者と病院実習者に分類
+  // 学校登校者と病院実習者に分類（クラスフィルター適用）
   const schoolStudents = students.filter((s) =>
-    s.schedule.some((sch) => sch.symbol === "学"),
+    s.schedule.some((sch) => sch.symbol === "学") &&
+    selectedClasses.includes(s.day_night)
   )
 
   const hospitalStudents = students.filter((s) =>
-    s.schedule.some((sch) => sch.symbol === "〇"),
+    s.schedule.some((sch) => sch.symbol === "〇") &&
+    selectedClasses.includes(s.day_night)
   )
 
   // 病院ごとにグループ化
@@ -385,41 +399,63 @@ export default function TeacherPage() {
                 <CardDescription>出席を確認する日付と時限を選択してください</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">日付</label>
-                    <Input
-                      type="date"
-                      value={`${selectedDate.substring(0, 4)}-${selectedDate.substring(4, 6)}-${selectedDate.substring(6, 8)}`}
-                      onChange={(e) => {
-                        const dateValue = e.target.value.replace(/-/g, "")
-                        setSelectedDate(dateValue)
-                      }}
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">日付</label>
+                      <Input
+                        type="date"
+                        value={`${selectedDate.substring(0, 4)}-${selectedDate.substring(4, 6)}-${selectedDate.substring(6, 8)}`}
+                        onChange={(e) => {
+                          const dateValue = e.target.value.replace(/-/g, "")
+                          setSelectedDate(dateValue)
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">時限</label>
+                      <Select
+                        value={selectedPeriod.toString()}
+                        onValueChange={(value) => setSelectedPeriod(parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6].map((period) => (
+                            <SelectItem key={period} value={period.toString()}>
+                              {period}時限
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-end">
+                      <Button onClick={handleExportAttendance} variant="outline" className="w-full">
+                        <Download className="h-4 w-4 mr-2" />
+                        出欠CSVエクスポート
+                      </Button>
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">時限</label>
-                    <Select
-                      value={selectedPeriod.toString()}
-                      onValueChange={(value) => setSelectedPeriod(parseInt(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[1, 2, 3, 4, 5, 6].map((period) => (
-                          <SelectItem key={period} value={period.toString()}>
-                            {period}時限
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={handleExportAttendance} variant="outline" className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      出欠CSVエクスポート
-                    </Button>
+                    <label className="text-sm font-medium mb-2 block">クラス絞り込み</label>
+                    <div className="flex gap-4">
+                      {["A", "B", "N"].map((classValue) => (
+                        <div key={classValue} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`class-${classValue}`}
+                            checked={selectedClasses.includes(classValue)}
+                            onCheckedChange={() => toggleClass(classValue)}
+                          />
+                          <label
+                            htmlFor={`class-${classValue}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {classValue}クラス
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </CardContent>
