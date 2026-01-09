@@ -1,15 +1,14 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Hospital, Calendar, Users, CheckCircle2, Building2, Clock } from "lucide-react"
-import { importCSVData } from "./actions/import-csv-data"
-import { exportDataAsCSV } from "./actions/export-data"
-import Image from "next/image"
+import { Search, Hospital, Calendar, Users, Building2, Clock, GraduationCap } from "lucide-react"
+import { AuthDialog } from "@/components/auth-dialog"
+import { setAuthCookie, isAppAuthenticated } from "@/lib/auth"
 
 interface Student {
   id: number
@@ -38,6 +37,9 @@ interface Stats {
 }
 
 function HospitalInternshipManagerContent() {
+  const router = useRouter()
+  const [authenticated, setAuthenticated] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
   const [students, setStudents] = useState<Student[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -45,16 +47,29 @@ function HospitalInternshipManagerContent() {
   const [searchName, setSearchName] = useState("")
   const [searchHospital, setSearchHospital] = useState("")
   const [searchDate, setSearchDate] = useState("")
-  const [visitRecords, setVisitRecords] = useState<Set<string>>(new Set())
-  const [importing, setImporting] = useState(false)
-  const [exporting, setExporting] = useState(false)
-  const [importMessage, setImportMessage] = useState<string | null>(null)
   const [todayInternships, setTodayInternships] = useState<
     Record<string, Array<{ name: string; kana: string; id: number }>>
   >({})
   const [showDetails, setShowDetails] = useState(false)
 
   useEffect(() => {
+    const checkAuth = () => {
+      const isAuth = isAppAuthenticated()
+      setAuthenticated(isAuth)
+      setAuthLoading(false)
+    }
+
+    checkAuth()
+  }, [])
+
+  const handleAuth = () => {
+    setAuthCookie("tmc_app_auth", "true")
+    setAuthenticated(true)
+  }
+
+  useEffect(() => {
+    if (!authenticated) return
+
     async function loadData() {
       try {
         console.log("[v0] Loading initial data...")
@@ -66,16 +81,6 @@ function HospitalInternshipManagerContent() {
         console.log("[v0] Stats data loaded:", statsData)
         setStats(statsData)
 
-        const visitsRes = await fetch("/api/visits")
-        if (!visitsRes.ok) {
-          throw new Error(`Visits API returned ${visitsRes.status}`)
-        }
-        const visitsData = await visitsRes.json()
-        console.log("[v0] Visits data loaded:", visitsData)
-
-        const visitSet = new Set((visitsData.visits || []).map((v: any) => `${v.hospital}|${v.visit_date}`))
-        setVisitRecords(visitSet)
-
         setLoading(false)
       } catch (error) {
         console.error("[v0] データの読み込みに失敗:", error)
@@ -85,7 +90,7 @@ function HospitalInternshipManagerContent() {
     }
 
     loadData()
-  }, [])
+  }, [authenticated])
 
   useEffect(() => {
     async function fetchStudents() {
@@ -111,10 +116,10 @@ function HospitalInternshipManagerContent() {
       }
     }
 
-    if (!loading) {
+    if (!loading && authenticated) {
       fetchStudents()
     }
-  }, [searchName, searchHospital, searchDate, loading])
+  }, [searchName, searchHospital, searchDate, loading, authenticated])
 
   useEffect(() => {
     async function fetchTodayInternships() {
@@ -154,45 +159,10 @@ function HospitalInternshipManagerContent() {
       }
     }
 
-    if (!loading) {
+    if (!loading && authenticated) {
       fetchTodayInternships()
     }
-  }, [loading, showDetails])
-
-  const toggleVisitRecord = async (hospital: string, date: string) => {
-    const key = `${hospital}|${date}`
-    const isCurrentlyVisited = visitRecords.has(key)
-
-    try {
-      if (isCurrentlyVisited) {
-        await fetch(`/api/visits?hospital=${encodeURIComponent(hospital)}&date=${encodeURIComponent(date)}`, {
-          method: "DELETE",
-        })
-        const newRecords = new Set(visitRecords)
-        newRecords.delete(key)
-        setVisitRecords(newRecords)
-      } else {
-        await fetch("/api/visits", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ hospital, date }),
-        })
-        const newRecords = new Set(visitRecords)
-        newRecords.add(key)
-        setVisitRecords(newRecords)
-      }
-
-      const statsRes = await fetch("/api/stats")
-      const statsData = await statsRes.json()
-      setStats(statsData)
-    } catch (error) {
-      console.error("巡回記録の更新に失敗:", error)
-    }
-  }
-
-  const isVisited = (hospital: string, date: string) => {
-    return visitRecords.has(`${hospital}|${date}`)
-  }
+  }, [loading, showDetails, authenticated])
 
   const getSymbolColor = (symbol: string) => {
     switch (symbol) {
@@ -222,52 +192,27 @@ function HospitalInternshipManagerContent() {
     return descriptions[symbol] || symbol
   }
 
-  const handleImport = async () => {
-    setImporting(true)
-    setImportMessage(null)
-
-    try {
-      const result = await importCSVData()
-
-      if (result.success) {
-        setImportMessage(
-          `✓ インポート成功: ${result.students}名の学生と${result.schedules}件のスケジュールをインポートしました`,
-        )
-        setTimeout(() => window.location.reload(), 2000)
-      } else {
-        setImportMessage(`✗ エラー: ${result.error}`)
-      }
-    } catch (error) {
-      setImportMessage(`✗ エラー: ${error instanceof Error ? error.message : "インポートに失敗しました"}`)
-    } finally {
-      setImporting(false)
-    }
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">認証を確認しています...</p>
+        </div>
+      </div>
+    )
   }
 
-  const handleExport = async () => {
-    setExporting(true)
-
-    try {
-      const result = await exportDataAsCSV()
-
-      if (result.success && result.csv) {
-        const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement("a")
-        link.href = url
-        link.download = `病院実習データ_${new Date().toISOString().split("T")[0]}.csv`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(url)
-      } else {
-        alert(`エクスポートに失敗しました: ${result.error}`)
-      }
-    } catch (error) {
-      alert(`エクスポートに失敗しました: ${error instanceof Error ? error.message : "不明なエラー"}`)
-    } finally {
-      setExporting(false)
-    }
+  if (!authenticated) {
+    return (
+      <AuthDialog
+        open={true}
+        onSuccess={handleAuth}
+        type="app"
+        title="病院実習スケジュール管理システム"
+        description="アクセスするにはパスワードを入力してください"
+      />
+    )
   }
 
   if (loading) {
@@ -291,23 +236,7 @@ function HospitalInternshipManagerContent() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm">
-              <p className="font-semibold">セットアップ手順:</p>
-              <ol className="list-decimal list-inside space-y-2">
-                <li>Supabase環境変数が設定されていることを確認</li>
-                <li>SQLスクリプト (01_create_tables.sql) を実行してテーブルを作成</li>
-                <li>下のボタンをクリックしてCSVデータをインポート</li>
-              </ol>
-              {importMessage && (
-                <div
-                  className={`p-3 rounded ${importMessage.startsWith("✓") ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}
-                >
-                  {importMessage}
-                </div>
-              )}
-              <Button onClick={handleImport} className="w-full" disabled={importing}>
-                <Image src="/icons/upload.svg" alt="Upload" width={16} height={16} className="mr-2" />
-                {importing ? "インポート中..." : "CSVデータをインポート"}
-              </Button>
+              <p className="font-semibold">管理者にお問い合わせください</p>
               <Button onClick={() => window.location.reload()} className="w-full" variant="outline">
                 再読み込み
               </Button>
@@ -319,21 +248,23 @@ function HospitalInternshipManagerContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Image src="/images/10.png" alt="マスコット" width={60} height={60} className="drop-shadow-lg" />
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-6">
+              <img src="/images/10.png" alt="Emergency Medical Mascot" className="w-20 h-20 object-contain" />
               <div>
-                <h1 className="text-2xl font-bold text-blue-50">TMC救急救命士学科 病院実習スケジュール</h1>
+                <h1 className="text-3xl font-bold text-foreground mb-2">TMC救急救命士学科 病院実習スケジュール</h1>
               </div>
             </div>
             <Button
-              onClick={() => (window.location.href = "/admin/login")}
+              onClick={() => router.push("/teacher")}
+              size="sm"
               variant="outline"
-              className="border-slate-700 hover:bg-slate-800 bg-transparent"
+              className="flex items-center gap-2"
             >
+              <GraduationCap className="h-4 w-4" />
               教員用ページ
             </Button>
           </div>
@@ -511,24 +442,6 @@ function HospitalInternshipManagerContent() {
                               </div>
                             ))}
                           </div>
-                          <div className="mt-3 pt-3 border-t">
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id={`today-visit-${hospital}`}
-                                checked={isVisited(hospital, `${new Date().getMonth() + 1}/${new Date().getDate()}`)}
-                                onCheckedChange={() =>
-                                  toggleVisitRecord(hospital, `${new Date().getMonth() + 1}/${new Date().getDate()}`)
-                                }
-                              />
-                              <label
-                                htmlFor={`today-visit-${hospital}`}
-                                className="text-sm cursor-pointer flex items-center gap-1"
-                              >
-                                <CheckCircle2 className="h-4 w-4" />
-                                巡回実施済み
-                              </label>
-                            </div>
-                          </div>
                         </CardContent>
                       </Card>
                     ))}
@@ -565,7 +478,6 @@ function HospitalInternshipManagerContent() {
                         <tr className="border-b-2 border-border">
                           <th className="p-3 text-left font-semibold bg-accent/50">日付</th>
                           <th className="p-3 text-left font-semibold bg-accent/50">実習生</th>
-                          <th className="p-3 text-center font-semibold bg-accent/50 w-32">巡回記録</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -613,25 +525,6 @@ function HospitalInternshipManagerContent() {
                                       <span className="text-xs text-muted-foreground">({student.kana})</span>
                                     </div>
                                   ))}
-                                </div>
-                              </td>
-                              <td className="p-3 text-center">
-                                <div className="flex items-center justify-center gap-2">
-                                  <Checkbox
-                                    id={`visit-hospital-${date}`}
-                                    checked={isVisited(dateMap[date][0].hospital, date)}
-                                    onCheckedChange={() => toggleVisitRecord(dateMap[date][0].hospital, date)}
-                                  />
-                                  <label
-                                    htmlFor={`visit-hospital-${date}`}
-                                    className="text-sm cursor-pointer flex items-center gap-1"
-                                  >
-                                    {isVisited(dateMap[date][0].hospital, date) ? (
-                                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                    ) : (
-                                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                                    )}
-                                  </label>
                                 </div>
                               </td>
                             </tr>
@@ -683,19 +576,6 @@ function HospitalInternshipManagerContent() {
                                 <div className="text-xs mt-2 text-muted-foreground">
                                   {getSymbolDescription(entry.symbol)}
                                 </div>
-
-                                {entry.symbol === "〇" && (
-                                  <div className="flex items-center gap-2 mt-3 pt-2 border-t">
-                                    <Checkbox
-                                      id={`visit-${student.id}-${idx}`}
-                                      checked={isVisited(student.hospital, entry.date)}
-                                      onCheckedChange={() => toggleVisitRecord(student.hospital, entry.date)}
-                                    />
-                                    <label htmlFor={`visit-${student.id}-${idx}`} className="text-xs cursor-pointer">
-                                      巡回済み
-                                    </label>
-                                  </div>
-                                )}
                               </div>
                             ))}
                           </div>
@@ -716,7 +596,7 @@ function HospitalInternshipManagerContent() {
             <CardContent className="py-12 text-center">
               <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-lg font-medium text-foreground mb-2">該当する学生が見つかりません</p>
-              <p className="text-muted-foreground">検索条件を変更するか、データをインポートしてください</p>
+              <p className="text-muted-foreground">検索条件を変更してください</p>
             </CardContent>
           </Card>
         )}

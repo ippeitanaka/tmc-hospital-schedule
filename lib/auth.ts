@@ -1,76 +1,45 @@
-"use server"
+// 認証ユーティリティ
 
-import { cookies } from "next/headers"
-import { getSupabaseServerClient } from "./supabase/server"
+export const AUTH_COOKIE_NAME = 'tmc_app_auth'
+export const TEACHER_AUTH_COOKIE_NAME = 'tmc_teacher_auth'
 
-export async function verifyViewerPassword(password: string): Promise<boolean> {
-  const supabase = await getSupabaseServerClient()
-  const { data } = await supabase
-    .from("auth_settings")
-    .select("setting_value")
-    .eq("setting_key", "viewer_password")
-    .single()
-
-  return data?.setting_value === password
+// クッキーに認証状態を保存
+export function setAuthCookie(name: string, value: string) {
+  if (typeof document !== 'undefined') {
+    // 30日間有効
+    const expires = new Date()
+    expires.setDate(expires.getDate() + 30)
+    document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Strict`
+  }
 }
 
-export async function verifyAdminPassword(password: string): Promise<boolean> {
-  const supabase = await getSupabaseServerClient()
-  const { data } = await supabase
-    .from("auth_settings")
-    .select("setting_value")
-    .eq("setting_key", "admin_password")
-    .single()
-
-  return data?.setting_value === password
+// クッキーから認証状態を取得
+export function getAuthCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null
+  
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [key, value] = cookie.trim().split('=')
+    if (key === name) {
+      return value
+    }
+  }
+  return null
 }
 
-export async function setViewerAuth() {
-  const cookieStore = await cookies()
-  cookieStore.set("viewer_auth", "true", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  })
+// クッキーを削除
+export function removeAuthCookie(name: string) {
+  if (typeof document !== 'undefined') {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict`
+  }
 }
 
-export async function setAdminAuth() {
-  const cookieStore = await cookies()
-  cookieStore.set("admin_auth", "true", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  })
+// アプリ認証チェック
+export function isAppAuthenticated(): boolean {
+  return getAuthCookie(AUTH_COOKIE_NAME) === 'true'
 }
 
-export async function clearAuth() {
-  const cookieStore = await cookies()
-  cookieStore.delete("viewer_auth")
-  cookieStore.delete("admin_auth")
-}
-
-export async function isViewerAuthenticated(): Promise<boolean> {
-  const cookieStore = await cookies()
-  return cookieStore.get("viewer_auth")?.value === "true"
-}
-
-export async function isAdminAuthenticated(): Promise<boolean> {
-  const cookieStore = await cookies()
-  return cookieStore.get("admin_auth")?.value === "true"
-}
-
-export async function updatePasswords(viewerPassword: string, adminPassword: string) {
-  const supabase = await getSupabaseServerClient()
-
-  await supabase
-    .from("auth_settings")
-    .update({ setting_value: viewerPassword, updated_at: new Date().toISOString() })
-    .eq("setting_key", "viewer_password")
-
-  await supabase
-    .from("auth_settings")
-    .update({ setting_value: adminPassword, updated_at: new Date().toISOString() })
-    .eq("setting_key", "admin_password")
+// 教員認証チェック
+export function isTeacherAuthenticated(): boolean {
+  return getAuthCookie(TEACHER_AUTH_COOKIE_NAME) === 'true'
 }
