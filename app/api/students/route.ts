@@ -37,9 +37,10 @@ export async function GET(request: Request) {
     let schedulesQuery = supabase.from("schedules").select("*").in("student_id", studentIds).order("schedule_date")
 
     if (date) {
-      // YYYY-MM-DD形式またはYYYY/MM/DD形式の両方に対応
-      const formattedDate = date.replace(/-/g, "/")
-      schedulesQuery = schedulesQuery.or(`schedule_date.ilike.%${date}%,schedule_date.ilike.%${formattedDate}%`)
+      // YYYY-MM-DD形式をYYYY/MM/DDに変換して両方の形式で検索
+      const dateWithSlash = date.replace(/-/g, "/")
+      const dateWithHyphen = date.replace(/\//g, "-")
+      schedulesQuery = schedulesQuery.or(`schedule_date.eq.${dateWithSlash},schedule_date.eq.${dateWithHyphen}`)
     }
 
     const { data: schedules, error: schedulesError } = await schedulesQuery
