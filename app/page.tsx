@@ -118,26 +118,10 @@ function HospitalInternshipManagerContent() {
           throw new Error(`Students API returned ${res.status}`)
         }
         const data = await res.json()
-        console.log("[v0] Students data loaded:", data)
-        console.log("[v0] Number of students returned:", data.students?.length || 0)
-        if (data.students && data.students.length > 0) {
-          const dayNightCounts = data.students.reduce((acc: any, s: any) => {
-            acc[s.dayNight || 'unknown'] = (acc[s.dayNight || 'unknown'] || 0) + 1
-            return acc
-          }, {})
-          console.log("[v0] Students by class:", dayNightCounts)
-        }
-        if (data.sampleDates) {
-          console.log("[v0] Sample dates from DB:", data.sampleDates)
-        }
-        if (data.debug) {
-          console.log("[v0] API Debug Info:", data.debug)
-        }
+
         setStudents(data.students || [])
 
-        const shouldShowDetails = Boolean(debouncedSearchName || debouncedSearchHospital || searchDate)
-        console.log('[v0] Setting showDetails to:', shouldShowDetails, { debouncedSearchName, debouncedSearchHospital, searchDate })
-        setShowDetails(shouldShowDetails)
+        setShowDetails(Boolean(debouncedSearchName || debouncedSearchHospital || searchDate))
       } catch (error) {
         console.error("学生データの取得に失敗:", error)
         setStudents([])
@@ -151,12 +135,8 @@ function HospitalInternshipManagerContent() {
 
   useEffect(() => {
     async function fetchTodayInternships() {
-      if (showDetails) {
-        console.log('[v0] Skipping fetchTodayInternships because showDetails is true')
-        return
-      }
+      if (showDetails) return
 
-      console.log('[v0] Fetching today internships...')
       try {
         const today = new Date()
         const month = today.getMonth() + 1
@@ -400,13 +380,10 @@ function HospitalInternshipManagerContent() {
             </div>
             {(searchName || searchHospital || searchDate) && (
               <div className="mt-4 flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="text-2xl font-bold text-primary mb-1">{students.length}件</div>
-                  <p className="text-sm text-muted-foreground">
-                    の結果が見つかりました
-                    {(searchName && !debouncedSearchName) && <span className="ml-2">(検索中...)</span>}
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  {students.length}件の結果が見つかりました
+                  {(searchName && !debouncedSearchName) && <span className="ml-2 text-primary">(検索中...)</span>}
+                </p>
                 <Button
                   variant="outline"
                   size="sm"
@@ -501,26 +478,7 @@ function HospitalInternshipManagerContent() {
         ) : null}
         
         {showDetails && (
-          <div className="space-y-4 w-full"
-            style={{
-              minHeight: '200px',
-              display: 'block',
-              visibility: 'visible',
-              opacity: 1,
-              position: 'relative',
-              zIndex: 1
-            }}
-          >
-            <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded mb-4 text-center font-bold">
-              <div className="text-lg">検索結果: {students.length}名</div>
-              <div className="text-sm mt-2">
-                showDetails: {showDetails ? 'true' : 'false'}<br/>
-                入力中: "{searchName}"<br/>
-                検索中: "{debouncedSearchName}"<br/>
-                hospital: "{searchHospital}" / "{debouncedSearchHospital}"<br/>
-                date: "{searchDate}"
-              </div>
-            </div>
+          <div className="space-y-4">
             {searchHospital && !searchName ? (
               <Card className="border-2">
                 <CardHeader>
