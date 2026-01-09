@@ -2,14 +2,20 @@ import { NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 
 // 巡回記録を取得
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const date = searchParams.get("date")
+
     const supabase = await getSupabaseServerClient()
 
-    const { data, error } = await supabase
-      .from("hospital_visits")
-      .select("hospital, visit_date")
-      .order("visited_at", { ascending: false })
+    let query = supabase.from("hospital_visits").select("*").order("visited_at", { ascending: false })
+
+    if (date) {
+      query = query.eq("visit_date", date)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       throw error
@@ -22,10 +28,10 @@ export async function GET() {
   }
 }
 
-// 巡回記録を追加
+// 巡回記録を追加・更新
 export async function POST(request: Request) {
   try {
-    const { hospital, date } = await request.json()
+    const { hospital, date, comments, visitedBy } = await request.json()
 
     if (!hospital || !date) {
       return NextResponse.json({ error: "Hospital and date are required" }, { status: 400 })
@@ -35,10 +41,18 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from("hospital_visits")
-      .insert({
-        hospital,
-        visit_date: date,
-      })
+      .upsert(
+        {
+          hospital,
+          visit_date: date,
+          comments: comments || null,
+          visited_by: visitedBy || null,
+          visited_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "hospital,visit_date",
+        },
+      )
       .select()
       .single()
 
@@ -48,8 +62,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ visit: data })
   } catch (error) {
-    console.error("Error creating visit:", error)
-    return NextResponse.json({ error: "Failed to create visit" }, { status: 500 })
+    console.error("Error creating/updating visit:", error)
+    return NextResponse.json({ error: "Failed to save visit" }, { status: 500 })
   }
 }
 

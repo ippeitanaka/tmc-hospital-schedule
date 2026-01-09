@@ -78,3 +78,44 @@ export async function GET(request: Request) {
     return NextResponse.json({ students: [] })
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json()
+    const { id, ...updates } = body
+
+    if (!id) {
+      return NextResponse.json({ error: "Student ID is required" }, { status: 400 })
+    }
+
+    const supabase = await getSupabaseServerClient()
+
+    // Update student data
+    const { data, error } = await supabase
+      .from("students")
+      .update({
+        student_number: updates.student_number,
+        name: updates.name,
+        kana: updates.kana,
+        hospital: updates.hospital,
+        gender: updates.gender,
+        birth_date: updates.birth_date,
+        age: updates.age,
+        day_night: updates.day_night,
+        group_name: updates.group_name,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return NextResponse.json({ student: data, success: true })
+  } catch (error) {
+    console.error("Error updating student:", error)
+    return NextResponse.json({ error: "Failed to update student" }, { status: 500 })
+  }
+}

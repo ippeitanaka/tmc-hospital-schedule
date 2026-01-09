@@ -6,11 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Hospital, Calendar, Users, CheckCircle2, Upload, Download, Building2, Clock } from "lucide-react"
+import { Search, Hospital, Calendar, Users, CheckCircle2, Building2, Clock } from "lucide-react"
 import { importCSVData } from "./actions/import-csv-data"
 import { exportDataAsCSV } from "./actions/export-data"
-import { CSVImportDialog } from "@/components/csv-import-dialog"
-import { CSVUploadDialog } from "@/components/csv-upload-dialog"
+import Image from "next/image"
 
 interface Student {
   id: number
@@ -306,7 +305,7 @@ function HospitalInternshipManagerContent() {
                 </div>
               )}
               <Button onClick={handleImport} className="w-full" disabled={importing}>
-                <Upload className="h-4 w-4 mr-2" />
+                <Image src="/icons/upload.svg" alt="Upload" width={16} height={16} className="mr-2" />
                 {importing ? "インポート中..." : "CSVデータをインポート"}
               </Button>
               <Button onClick={() => window.location.reload()} className="w-full" variant="outline">
@@ -320,36 +319,23 @@ function HospitalInternshipManagerContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-6">
-              <img src="/images/10.png" alt="Emergency Medical Mascot" className="w-20 h-20 object-contain" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Image src="/images/10.png" alt="マスコット" width={60} height={60} className="drop-shadow-lg" />
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">TMC救急救命士学科 病院実習スケジュール</h1>
+                <h1 className="text-2xl font-bold text-blue-50">TMC救急救命士学科 病院実習スケジュール</h1>
               </div>
             </div>
-            <div className="flex gap-2">
-              {importMessage && (
-                <div
-                  className={`text-sm p-2 rounded max-w-md ${importMessage.startsWith("✓") ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}
-                >
-                  {importMessage}
-                </div>
-              )}
-              <CSVImportDialog />
-              <CSVUploadDialog />
-              <Button
-                onClick={handleExport}
-                disabled={exporting || stats.studentCount === 0}
-                size="sm"
-                variant="outline"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {exporting ? "エクスポート中..." : "CSVエクスポート"}
-              </Button>
-            </div>
+            <Button
+              onClick={() => (window.location.href = "/admin/login")}
+              variant="outline"
+              className="border-slate-700 hover:bg-slate-800 bg-transparent"
+            >
+              教員用ページ
+            </Button>
           </div>
         </div>
       </header>
