@@ -185,15 +185,31 @@ export default function TeacherPage() {
     const dateForApi = `${month}/${day}`
 
     try {
-      await fetch("/api/visits", {
+      const response = await fetch("/api/visits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hospital, date: dateForApi }),
       })
 
-      loadStudentsAndAttendance()
+      if (response.ok) {
+        // 成功時の視覚的フィードバック
+        const button = document.querySelector(`[data-visit-hospital="${hospital}"]`) as HTMLElement
+        if (button) {
+          const originalText = button.textContent
+          button.textContent = "✓ 記録しました"
+          button.style.backgroundColor = "rgb(34 197 94)"
+          setTimeout(() => {
+            if (button.textContent === "✓ 記録しました") {
+              button.textContent = originalText
+              button.style.backgroundColor = ""
+            }
+          }, 1500)
+        }
+        await loadStudentsAndAttendance()
+      }
     } catch (error) {
       console.error("巡回記録の更新に失敗:", error)
+      alert("巡回記録の更新に失敗しました")
     }
   }
 
@@ -203,13 +219,30 @@ export default function TeacherPage() {
     const dateForApi = `${month}/${day}`
 
     try {
-      await fetch("/api/visits", {
+      const response = await fetch("/api/visits", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hospital, date: dateForApi, comment }),
       })
 
-      setVisitComments((prev) => ({ ...prev, [hospital]: comment }))
+      if (response.ok) {
+        setVisitComments((prev) => ({ ...prev, [hospital]: comment }))
+        // 成功時の視覚的フィードバック
+        const button = document.querySelector(`[data-comment-hospital="${hospital}"]`) as HTMLElement
+        if (button) {
+          const originalText = button.textContent
+          button.textContent = "✓ 保存完了"
+          button.style.backgroundColor = "rgb(34 197 94)"
+          button.style.color = "white"
+          setTimeout(() => {
+            if (button.textContent === "✓ 保存完了") {
+              button.textContent = originalText
+              button.style.backgroundColor = ""
+              button.style.color = ""
+            }
+          }, 1500)
+        }
+      }
     } catch (error) {
       console.error("コメントの更新に失敗:", error)
       alert("コメントの更新に失敗しました")
@@ -308,15 +341,23 @@ export default function TeacherPage() {
     const currentStatus = getAttendanceStatus(studentNumber)
     if (currentStatus === targetStatus) {
       const colors: Record<number, string> = {
-        1: "bg-green-500 text-white hover:bg-green-600",
-        2: "bg-red-500 text-white hover:bg-red-600",
-        3: "bg-yellow-500 text-white hover:bg-yellow-600",
-        4: "bg-orange-500 text-white hover:bg-orange-600",
-        5: "bg-blue-500 text-white hover:bg-blue-600",
+        1: "bg-green-500 text-white hover:bg-green-600 font-bold",
+        2: "bg-red-500 text-white hover:bg-red-600 font-bold",
+        3: "bg-yellow-500 text-white hover:bg-yellow-600 font-bold",
+        4: "bg-orange-500 text-white hover:bg-orange-600 font-bold",
+        5: "bg-blue-500 text-white hover:bg-blue-600 font-bold",
       }
       return colors[targetStatus] || ""
     }
-    return "bg-gray-200 hover:bg-gray-300"
+    // 未選択時も色を付けて見やすくする
+    const defaultColors: Record<number, string> = {
+      1: "bg-green-100 text-green-700 hover:bg-green-200 border-2 border-green-300",
+      2: "bg-red-100 text-red-700 hover:bg-red-200 border-2 border-red-300",
+      3: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-2 border-yellow-300",
+      4: "bg-orange-100 text-orange-700 hover:bg-orange-200 border-2 border-orange-300",
+      5: "bg-blue-100 text-blue-700 hover:bg-blue-200 border-2 border-blue-300",
+    }
+    return defaultColors[targetStatus] || "bg-gray-100 hover:bg-gray-200 border-2 border-gray-300"
   }
 
   // 学校登校者と病院実習者に分類（クラスフィルター適用）
@@ -376,10 +417,14 @@ export default function TeacherPage() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="attendance" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="attendance">
               <Calendar className="h-4 w-4 mr-2" />
               出席管理
+            </TabsTrigger>
+            <TabsTrigger value="visits">
+              <Building2 className="h-4 w-4 mr-2" />
+              病院巡回一覧
             </TabsTrigger>
             <TabsTrigger value="data">
               <Upload className="h-4 w-4 mr-2" />
@@ -568,6 +613,7 @@ export default function TeacherPage() {
                             variant="outline"
                             className="flex-shrink-0"
                             onClick={() => toggleVisitRecord(hospital)}
+                            data-visit-hospital={hospital}
                           >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
                             巡回OK
@@ -585,6 +631,7 @@ export default function TeacherPage() {
                             <Button
                               size="sm"
                               onClick={() => updateVisitComment(hospital, visitComments[hospital] || "")}
+                              data-comment-hospital={hospital}
                             >
                               <MessageSquare className="h-4 w-4 mr-2" />
                               保存
@@ -595,6 +642,22 @@ export default function TeacherPage() {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* 病院巡回一覧タブ */}
+          <TabsContent value="visits" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-green-500" />
+                  病院巡回実施状況一覧
+                </CardTitle>
+                <CardDescription>実習施設ごとの巡回記録とコメント</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <VisitsOverview />
               </CardContent>
             </Card>
           </TabsContent>
@@ -686,6 +749,135 @@ export default function TeacherPage() {
           </TabsContent>
         </Tabs>
       </div>
+    </div>
+  )
+}
+
+// 病院巡回一覧コンポーネント
+function VisitsOverview() {
+  const [visits, setVisits] = useState<any[]>([])
+  const [students, setStudents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // 全ての訪問記録を取得
+        const visitsRes = await fetch("/api/visits")
+        const visitsData = await visitsRes.json()
+        
+        // 全ての学生データを取得
+        const studentsRes = await fetch("/api/students")
+        const studentsData = await studentsRes.json()
+        
+        setVisits(visitsData.visits || [])
+        setStudents(studentsData.students || [])
+        setLoading(false)
+      } catch (error) {
+        console.error("データの読み込みに失敗:", error)
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">読み込み中...</p>
+      </div>
+    )
+  }
+
+  // 病院ごとに巡回記録をグループ化
+  const hospitalVisits: Record<string, any[]> = {}
+  visits.forEach((visit) => {
+    if (!hospitalVisits[visit.hospital]) {
+      hospitalVisits[visit.hospital] = []
+    }
+    hospitalVisits[visit.hospital].push(visit)
+  })
+
+  // 各病院の学生を取得
+  const getStudentsForHospital = (hospital: string) => {
+    return students.filter((s) => s.hospital === hospital)
+  }
+
+  return (
+    <div className="space-y-6">
+      {Object.keys(hospitalVisits).length === 0 ? (
+        <div className="text-center py-12">
+          <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-lg font-medium text-foreground mb-2">巡回記録がありません</p>
+          <p className="text-muted-foreground">出席管理タブから巡回記録を追加してください</p>
+        </div>
+      ) : (
+        Object.entries(hospitalVisits)
+          .sort(([a], [b]) => a.localeCompare(b, "ja"))
+          .map(([hospital, hospitalVisitList]) => {
+            const hospitalStudents = getStudentsForHospital(hospital)
+            return (
+              <Card key={hospital} className="border-2">
+                <CardHeader className="bg-accent/30">
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-green-500" />
+                    {hospital}
+                  </CardTitle>
+                  <CardDescription>
+                    実習生: {hospitalStudents.map((s) => s.name).join("、")} ({hospitalStudents.length}名)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-sm text-muted-foreground">巡回実施記録</h4>
+                    {hospitalVisitList.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4">まだ巡回記録がありません</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {hospitalVisitList
+                          .sort((a, b) => {
+                            // 日付でソート（新しい順）
+                            const dateA = a.visit_date.split("/").map((n: string) => parseInt(n))
+                            const dateB = b.visit_date.split("/").map((n: string) => parseInt(n))
+                            if (dateA[0] !== dateB[0]) return dateB[0] - dateA[0] // 月
+                            return dateB[1] - dateA[1] // 日
+                          })
+                          .map((visit, idx) => (
+                            <div
+                              key={idx}
+                              className="border rounded-lg p-4 bg-card hover:bg-accent/10 transition-colors"
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-blue-500" />
+                                  <span className="font-medium">{visit.visit_date}</span>
+                                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                  <span className="text-sm text-green-600 font-medium">巡回実施済</span>
+                                </div>
+                              </div>
+                              {visit.comment && (
+                                <div className="mt-3 pt-3 border-t">
+                                  <div className="flex items-start gap-2">
+                                    <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                    <div className="flex-1">
+                                      <p className="text-xs text-muted-foreground mb-1">コメント:</p>
+                                      <p className="text-sm whitespace-pre-wrap">{visit.comment}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })
+      )}
     </div>
   )
 }
