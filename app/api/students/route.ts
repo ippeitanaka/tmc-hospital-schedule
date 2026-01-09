@@ -13,9 +13,13 @@ export async function GET(request: Request) {
     // デバッグ: schedulesテーブルの最初の5件を確認
     let sampleDates: string[] = []
     if (!name && !hospital && !date) {
-      const { data: sampleSchedules } = await supabase.from("schedules").select("schedule_date").limit(5)
+      const { data: sampleSchedules } = await supabase.from("schedules").select("schedule_date").limit(10)
       sampleDates = sampleSchedules?.map(s => s.schedule_date) || []
       console.log('[API] Sample schedule dates from DB:', sampleDates)
+      
+      // スケジュールテーブルの総件数も確認
+      const { count } = await supabase.from("schedules").select("*", { count: 'exact', head: true })
+      console.log('[API] Total schedules in DB:', count)
     }
 
     // 学生データを取得
@@ -65,6 +69,14 @@ export async function GET(request: Request) {
       ]
       
       console.log('[API] Date search formats:', formats)
+      
+      // まず、日付フィルターなしでスケジュールがあるか確認
+      const { count: totalCount } = await supabase
+        .from("schedules")
+        .select("*", { count: 'exact', head: true })
+        .in("student_id", studentIds)
+      console.log('[API] Total schedules for these students:', totalCount)
+      
       schedulesQuery = schedulesQuery.in("schedule_date", formats)
     }
 

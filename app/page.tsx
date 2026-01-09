@@ -107,6 +107,9 @@ function HospitalInternshipManagerContent() {
         }
         const data = await res.json()
         console.log("[v0] Students data loaded:", data)
+        if (data.sampleDates) {
+          console.log("[v0] Sample dates from DB:", data.sampleDates)
+        }
         if (data.debug) {
           console.log("[v0] API Debug Info:", data.debug)
         }
