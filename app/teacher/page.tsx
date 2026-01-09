@@ -844,32 +844,58 @@ function VisitsOverview() {
                             if (dateA[0] !== dateB[0]) return dateB[0] - dateA[0] // 月
                             return dateB[1] - dateA[1] // 日
                           })
-                          .map((visit, idx) => (
-                            <div
-                              key={idx}
-                              className="border rounded-lg p-4 bg-card hover:bg-accent/10 transition-colors"
-                            >
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-blue-500" />
-                                  <span className="font-medium">{visit.visit_date}</span>
-                                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                  <span className="text-sm text-green-600 font-medium">巡回実施済</span>
-                                </div>
-                              </div>
-                              {visit.comment && (
-                                <div className="mt-3 pt-3 border-t">
-                                  <div className="flex items-start gap-2">
-                                    <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                    <div className="flex-1">
-                                      <p className="text-xs text-muted-foreground mb-1">コメント:</p>
-                                      <p className="text-sm whitespace-pre-wrap">{visit.comment}</p>
+                          .map((visit, idx) => {
+                            // その日に実習している学生を抽出
+                            const studentsOnThisDate = hospitalStudents.filter((student) =>
+                              student.schedule.some(
+                                (sch: any) => sch.symbol === "〇" && sch.date.includes(visit.visit_date)
+                              )
+                            )
+                            
+                            return (
+                              <div
+                                key={idx}
+                                className="border rounded-lg p-4 bg-card hover:bg-accent/10 transition-colors"
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Calendar className="h-4 w-4 text-blue-500" />
+                                      <span className="font-medium">{visit.visit_date}</span>
+                                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                      <span className="text-sm text-green-600 font-medium">巡回実施済</span>
                                     </div>
+                                    {studentsOnThisDate.length > 0 && (
+                                      <div className="flex items-start gap-2 ml-6">
+                                        <Users className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                        <div className="flex flex-wrap gap-2">
+                                          {studentsOnThisDate.map((student) => (
+                                            <span
+                                              key={student.id}
+                                              className="inline-flex items-center px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-sm"
+                                            >
+                                              {student.name}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                              )}
-                            </div>
-                          ))}
+                                {visit.comment && (
+                                  <div className="mt-3 pt-3 border-t">
+                                    <div className="flex items-start gap-2">
+                                      <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                      <div className="flex-1">
+                                        <p className="text-xs text-muted-foreground mb-1">コメント:</p>
+                                        <p className="text-sm whitespace-pre-wrap">{visit.comment}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
                       </div>
                     )}
                   </div>
