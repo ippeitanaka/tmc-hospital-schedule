@@ -593,7 +593,23 @@ function HospitalInternshipManagerContent() {
                             <div className="space-y-2">
                               <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">実習スケジュール</h4>
                               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-3">
-                                {student.schedule.map((entry, idx) => (
+                                {student.schedule
+                                  .sort((a, b) => {
+                                    // 日付を "2026/2/11" や "2/11" 形式からソート用の数値に変換
+                                    const parseDate = (dateStr: string) => {
+                                      const parts = dateStr.split('/').map(Number)
+                                      if (parts.length === 3) {
+                                        // YYYY/M/D 形式
+                                        return parts[0] * 10000 + parts[1] * 100 + parts[2]
+                                      } else if (parts.length === 2) {
+                                        // M/D 形式（年は2026と仮定）
+                                        return 2026 * 10000 + parts[0] * 100 + parts[1]
+                                      }
+                                      return 0
+                                    }
+                                    return parseDate(a.date) - parseDate(b.date)
+                                  })
+                                  .map((entry, idx) => (
                                   <div
                                     key={idx}
                                     className="border-2 rounded-lg p-2 sm:p-2.5 hover:bg-accent/50 transition-all"
@@ -671,7 +687,23 @@ function HospitalInternshipManagerContent() {
                             <div className="space-y-2">
                               <h4 className="font-semibold text-sm text-muted-foreground mb-3">実習スケジュール</h4>
                               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                                {student.schedule.map((entry, idx) => (
+                                {student.schedule
+                                  .sort((a, b) => {
+                                    // 日付を "2026/2/11" や "2/11" 形式からソート用の数値に変換
+                                    const parseDate = (dateStr: string) => {
+                                      const parts = dateStr.split('/').map(Number)
+                                      if (parts.length === 3) {
+                                        // YYYY/M/D 形式
+                                        return parts[0] * 10000 + parts[1] * 100 + parts[2]
+                                      } else if (parts.length === 2) {
+                                        // M/D 形式（年は2026と仮定）
+                                        return 2026 * 10000 + parts[0] * 100 + parts[1]
+                                      }
+                                      return 0
+                                    }
+                                    return parseDate(a.date) - parseDate(b.date)
+                                  })
+                                  .map((entry, idx) => (
                                   <div
                                     key={idx}
                                     className="border-2 rounded-lg p-3 hover:bg-accent/50 transition-all hover:shadow-md"
