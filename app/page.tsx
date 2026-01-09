@@ -123,7 +123,9 @@ function HospitalInternshipManagerContent() {
         }
         setStudents(data.students || [])
 
-        setShowDetails(Boolean(searchName || searchHospital || searchDate))
+        const shouldShowDetails = Boolean(searchName || searchHospital || searchDate)
+        console.log('[v0] Setting showDetails to:', shouldShowDetails, { searchName, searchHospital, searchDate })
+        setShowDetails(shouldShowDetails)
       } catch (error) {
         console.error("学生データの取得に失敗:", error)
         setStudents([])
@@ -137,8 +139,12 @@ function HospitalInternshipManagerContent() {
 
   useEffect(() => {
     async function fetchTodayInternships() {
-      if (showDetails) return
+      if (showDetails) {
+        console.log('[v0] Skipping fetchTodayInternships because showDetails is true')
+        return
+      }
 
+      console.log('[v0] Fetching today internships...')
       try {
         const today = new Date()
         const month = today.getMonth() + 1
