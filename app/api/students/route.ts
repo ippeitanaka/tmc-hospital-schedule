@@ -74,7 +74,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ students: filteredStudents })
   } catch (error) {
-    console.error("[v0] Error fetching students:", error)
+    console.error("Error fetching students:", error)
     return NextResponse.json({ students: [] })
   }
 }

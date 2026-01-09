@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Hospital, Calendar, Users, CheckCircle2, Upload, Download } from "lucide-react"
+import { Search, Hospital, Calendar, Users, CheckCircle2, Upload, Download, Building2, Clock } from "lucide-react"
 import { importCSVData } from "./actions/import-csv-data"
 import { exportDataAsCSV } from "./actions/export-data"
+import { CSVImportDialog } from "@/components/csv-import-dialog"
+import { CSVUploadDialog } from "@/components/csv-upload-dialog"
 
 interface Student {
   id: number
@@ -48,6 +50,10 @@ function HospitalInternshipManagerContent() {
   const [importing, setImporting] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [importMessage, setImportMessage] = useState<string | null>(null)
+  const [todayInternships, setTodayInternships] = useState<
+    Record<string, Array<{ name: string; kana: string; id: number }>>
+  >({})
+  const [showDetails, setShowDetails] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -98,8 +104,10 @@ function HospitalInternshipManagerContent() {
         const data = await res.json()
         console.log("[v0] Students data loaded:", data)
         setStudents(data.students || [])
+
+        setShowDetails(Boolean(searchName || searchHospital || searchDate))
       } catch (error) {
-        console.error("[v0] 学生データの取得に失敗:", error)
+        console.error("学生データの取得に失敗:", error)
         setStudents([])
       }
     }
@@ -108,6 +116,49 @@ function HospitalInternshipManagerContent() {
       fetchStudents()
     }
   }, [searchName, searchHospital, searchDate, loading])
+
+  useEffect(() => {
+    async function fetchTodayInternships() {
+      if (showDetails) return
+
+      try {
+        const today = new Date()
+        const month = today.getMonth() + 1
+        const day = today.getDate()
+        const todayStr = `${month}/${day}`
+
+        const res = await fetch(`/api/students?date=${encodeURIComponent(todayStr)}`)
+        if (!res.ok) throw new Error(`API returned ${res.status}`)
+
+        const data = await res.json()
+        const students = data.students || []
+
+        const grouped: Record<string, Array<{ name: string; kana: string; id: number }>> = {}
+
+        students.forEach((student: any) => {
+          const todaySchedule = student.schedule.find((s: any) => s.symbol === "〇" && s.date.includes(todayStr))
+          if (todaySchedule) {
+            if (!grouped[student.hospital]) {
+              grouped[student.hospital] = []
+            }
+            grouped[student.hospital].push({
+              name: student.name,
+              kana: student.kana,
+              id: student.id,
+            })
+          }
+        })
+
+        setTodayInternships(grouped)
+      } catch (error) {
+        console.error("本日の実習データの取得に失敗:", error)
+      }
+    }
+
+    if (!loading) {
+      fetchTodayInternships()
+    }
+  }, [loading, showDetails])
 
   const toggleVisitRecord = async (hospital: string, date: string) => {
     const key = `${hospital}|${date}`
@@ -161,6 +212,17 @@ function HospitalInternshipManagerContent() {
     }
   }
 
+  const getSymbolDescription = (symbol: string) => {
+    const descriptions: Record<string, string> = {
+      学: "学校登校日",
+      数: "数学セミナー日",
+      〇: "病院実習当日",
+      半: "午後のみ登校",
+      オリ: "オリエンテーション",
+    }
+    return descriptions[symbol] || symbol
+  }
+
   const handleImport = async () => {
     setImporting(true)
     setImportMessage(null)
@@ -190,7 +252,6 @@ function HospitalInternshipManagerContent() {
       const result = await exportDataAsCSV()
 
       if (result.success && result.csv) {
-        // Create download link
         const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
         const url = URL.createObjectURL(blob)
         const link = document.createElement("a")
@@ -275,6 +336,8 @@ function HospitalInternshipManagerContent() {
                   {importMessage}
                 </div>
               )}
+              <CSVImportDialog />
+              <CSVUploadDialog />
               <Button
                 onClick={handleExport}
                 disabled={exporting || stats.studentCount === 0}
@@ -284,12 +347,6 @@ function HospitalInternshipManagerContent() {
                 <Download className="h-4 w-4 mr-2" />
                 {exporting ? "エクスポート中..." : "CSVエクスポート"}
               </Button>
-              {stats.studentCount === 0 && (
-                <Button onClick={handleImport} disabled={importing} size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
-                  {importing ? "インポート中..." : "データをインポート"}
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -358,7 +415,7 @@ function HospitalInternshipManagerContent() {
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">学生氏名・ふりがな</label>
                 <Input
-                  placeholder="例: 川畑 または かわばた"
+                  placeholder="例: 田中 または ﾀﾅｶ"
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
                 />
@@ -366,7 +423,7 @@ function HospitalInternshipManagerContent() {
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">実習施設名</label>
                 <Input
-                  placeholder="例: 堺市 または 近畿"
+                  placeholder="例：済生会"
                   value={searchHospital}
                   onChange={(e) => setSearchHospital(e.target.value)}
                 />
@@ -408,74 +465,251 @@ function HospitalInternshipManagerContent() {
               {Object.entries(stats.symbols).map(([symbol, description]) => (
                 <div key={symbol} className="flex items-center gap-2">
                   <Badge className={getSymbolColor(symbol)}>{symbol}</Badge>
-                  <span className="text-sm text-muted-foreground">{description}</span>
+                  <span className="text-sm text-muted-foreground">{getSymbolDescription(symbol)}</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          {students.map((student) => (
-            <Card key={student.id}>
+        {!showDetails ? (
+          <div>
+            <Card className="mb-6 border-primary/50">
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-xl">
-                      {student.name}
-                      <span className="text-sm font-normal text-muted-foreground ml-3">({student.kana})</span>
-                    </CardTitle>
-                    <CardDescription className="mt-2">
-                      <span className="inline-block mr-4">
-                        <Hospital className="inline h-4 w-4 mr-1" />
-                        {student.hospital}
-                      </span>
-                      <span className="inline-block mr-4">学籍番号: {student.studentNumber}</span>
-                      <span className="inline-block mr-4">
-                        {student.dayNight} {student.group}班
-                      </span>
-                    </CardDescription>
-                  </div>
-                </div>
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <Clock className="h-6 w-6 text-primary" />
+                  本日の病院実習状況
+                </CardTitle>
+                <CardDescription>
+                  {new Date().toLocaleDateString("ja-JP", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    weekday: "long",
+                  })}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {student.schedule.length > 0 ? (
-                    <div className="space-y-2">
-                      <h4 className="font-semibold text-sm text-muted-foreground mb-3">実習スケジュール</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                        {student.schedule.map((entry, idx) => (
-                          <div key={idx} className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
-                            <div className="text-xs text-muted-foreground mb-1">{entry.date}</div>
-                            <Badge className={`${getSymbolColor(entry.symbol)} text-white`}>{entry.symbol}</Badge>
-                            <div className="text-xs mt-1 text-muted-foreground">{entry.description}</div>
-
-                            {entry.symbol === "〇" && (
-                              <div className="flex items-center gap-2 mt-2">
-                                <Checkbox
-                                  id={`visit-${student.id}-${idx}`}
-                                  checked={isVisited(student.hospital, entry.date)}
-                                  onCheckedChange={() => toggleVisitRecord(student.hospital, entry.date)}
-                                />
-                                <label htmlFor={`visit-${student.id}-${idx}`} className="text-xs cursor-pointer">
-                                  巡回済み
-                                </label>
+                {Object.keys(todayInternships).length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Object.entries(todayInternships).map(([hospital, students]) => (
+                      <Card key={hospital} className="border-2 hover:border-primary/50 transition-colors">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-green-500" />
+                            {hospital}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground mb-2">実習生 ({students.length}名)</p>
+                            {students.map((student) => (
+                              <div key={student.id} className="flex items-center gap-2 p-2 rounded bg-accent/50">
+                                <Users className="h-4 w-4 text-blue-500" />
+                                <div>
+                                  <p className="font-medium text-sm">{student.name}</p>
+                                  <p className="text-xs text-muted-foreground">{student.kana}</p>
+                                </div>
                               </div>
-                            )}
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">スケジュールデータがありません</p>
-                  )}
-                </div>
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id={`today-visit-${hospital}`}
+                                checked={isVisited(hospital, `${new Date().getMonth() + 1}/${new Date().getDate()}`)}
+                                onCheckedChange={() =>
+                                  toggleVisitRecord(hospital, `${new Date().getMonth() + 1}/${new Date().getDate()}`)
+                                }
+                              />
+                              <label
+                                htmlFor={`today-visit-${hospital}`}
+                                className="text-sm cursor-pointer flex items-center gap-1"
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                                巡回実施済み
+                              </label>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-lg font-medium text-foreground mb-2">本日の実習はありません</p>
+                    <p className="text-muted-foreground">検索フィルターを使用して学生や施設の情報を確認できます</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {searchHospital && !searchName ? (
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Building2 className="h-6 w-6 text-green-500" />
+                    {searchHospital} の実習スケジュール
+                  </CardTitle>
+                  <CardDescription>日付ごとの実習生一覧</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-border">
+                          <th className="p-3 text-left font-semibold bg-accent/50">日付</th>
+                          <th className="p-3 text-left font-semibold bg-accent/50">実習生</th>
+                          <th className="p-3 text-center font-semibold bg-accent/50 w-32">巡回記録</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const dateMap: Record<
+                            string,
+                            Array<{ name: string; kana: string; id: number; hospital: string }>
+                          > = {}
 
-        {students.length === 0 && !loading && (
+                          students.forEach((student) => {
+                            student.schedule
+                              .filter((s) => s.symbol === "〇")
+                              .forEach((entry) => {
+                                if (!dateMap[entry.date]) {
+                                  dateMap[entry.date] = []
+                                }
+                                dateMap[entry.date].push({
+                                  name: student.name,
+                                  kana: student.kana,
+                                  id: student.id,
+                                  hospital: student.hospital,
+                                })
+                              })
+                          })
+
+                          const sortedDates = Object.keys(dateMap).sort((a, b) => {
+                            const [aMonth, aDay] = a.split("/").map(Number)
+                            const [bMonth, bDay] = b.split("/").map(Number)
+                            if (aMonth !== bMonth) return aMonth - bMonth
+                            return aDay - bDay
+                          })
+
+                          return sortedDates.map((date) => (
+                            <tr key={date} className="border-b border-border hover:bg-accent/30 transition-colors">
+                              <td className="p-3 font-medium">{date}</td>
+                              <td className="p-3">
+                                <div className="flex flex-wrap gap-2">
+                                  {dateMap[date].map((student) => (
+                                    <div
+                                      key={student.id}
+                                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20"
+                                    >
+                                      <Users className="h-3 w-3 text-blue-500" />
+                                      <span className="text-sm font-medium">{student.name}</span>
+                                      <span className="text-xs text-muted-foreground">({student.kana})</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="p-3 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Checkbox
+                                    id={`visit-hospital-${date}`}
+                                    checked={isVisited(dateMap[date][0].hospital, date)}
+                                    onCheckedChange={() => toggleVisitRecord(dateMap[date][0].hospital, date)}
+                                  />
+                                  <label
+                                    htmlFor={`visit-hospital-${date}`}
+                                    className="text-sm cursor-pointer flex items-center gap-1"
+                                  >
+                                    {isVisited(dateMap[date][0].hospital, date) ? (
+                                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </label>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              students.map((student) => (
+                <Card key={student.id} className="border-2">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-xl">
+                          {student.name}
+                          <span className="text-sm font-normal text-muted-foreground ml-3">({student.kana})</span>
+                        </CardTitle>
+                        <CardDescription className="mt-2">
+                          <span className="inline-block mr-4">
+                            <Hospital className="inline h-4 w-4 mr-1" />
+                            {student.hospital}
+                          </span>
+                          <span className="inline-block mr-4">学籍番号: {student.studentNumber}</span>
+                          <span className="inline-block mr-4">
+                            {student.dayNight} {student.group}班
+                          </span>
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {student.schedule.length > 0 ? (
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-3">実習スケジュール</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                            {student.schedule.map((entry, idx) => (
+                              <div
+                                key={idx}
+                                className="border-2 rounded-lg p-3 hover:bg-accent/50 transition-all hover:shadow-md"
+                              >
+                                <div className="text-xs font-medium text-muted-foreground mb-2">{entry.date}</div>
+                                <Badge className={`${getSymbolColor(entry.symbol)} text-white w-full justify-center`}>
+                                  {entry.symbol}
+                                </Badge>
+                                <div className="text-xs mt-2 text-muted-foreground">
+                                  {getSymbolDescription(entry.symbol)}
+                                </div>
+
+                                {entry.symbol === "〇" && (
+                                  <div className="flex items-center gap-2 mt-3 pt-2 border-t">
+                                    <Checkbox
+                                      id={`visit-${student.id}-${idx}`}
+                                      checked={isVisited(student.hospital, entry.date)}
+                                      onCheckedChange={() => toggleVisitRecord(student.hospital, entry.date)}
+                                    />
+                                    <label htmlFor={`visit-${student.id}-${idx}`} className="text-xs cursor-pointer">
+                                      巡回済み
+                                    </label>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">スケジュールデータがありません</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
+
+        {students.length === 0 && showDetails && (
           <Card>
             <CardContent className="py-12 text-center">
               <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

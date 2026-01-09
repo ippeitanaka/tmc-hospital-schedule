@@ -9,7 +9,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "救急救命士学科 病院実習管理システム",
-  description: "23期生の病院実習スケジュール・巡回記録管理システム",
+  description: "TMC病院実習スケジュール・巡回記録管理システム",
   generator: "v0.app",
   icons: {
     icon: [

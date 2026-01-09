@@ -1,26 +1,8 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-
-interface StudentRecord {
-  student_number: string
-  name: string
-  furigana: string
-  gender: string
-  birth_date: string
-  age: number
-  hospital_name: string
-  group_name: string
-  class_type: string
-  team_number: number
-}
-
-interface ScheduleRecord {
-  student_number: string
-  schedule_date: string
-  schedule_type: string
-  period: number
-}
+import { promises as fs } from "fs"
+import path from "path"
 
 export async function importCSVData() {
   try {
@@ -28,8 +10,8 @@ export async function importCSVData() {
 
     console.log("[v0] Starting CSV import...")
 
-    const csvModule = await import("@/user_read_only_context/text_attachments/病院実習期間日程表-DLJn3.csv")
-    const csvContent = csvModule.default || ""
+    const csvPath = path.join(process.cwd(), "data", "hospital-schedule.csv")
+    const csvContent = await fs.readFile(csvPath, "utf-8")
 
     const lines = csvContent.split("\n")
 
@@ -46,8 +28,24 @@ export async function importCSVData() {
 
     console.log(`[v0] Found ${dates.length} dates`)
 
-    const students: StudentRecord[] = []
-    const schedules: ScheduleRecord[] = []
+    const students: Array<{
+      student_number: string
+      name: string
+      kana: string
+      gender: string
+      birth_date: string
+      age: string
+      hospital: string
+      day_night: string
+      group_name: string
+    }> = []
+
+    const schedules: Array<{
+      student_number: string
+      schedule_date: string
+      symbol: string
+      description: string
+    }> = []
 
     // Parse student data starting from row 23 (index 22)
     for (let i = 22; i < 206; i++) {
@@ -59,36 +57,42 @@ export async function importCSVData() {
       if (!studentNumber.match(/^\d{7}$/)) continue
 
       const name = cols[7]?.trim() || ""
-      const furigana = cols[8]?.trim() || ""
+      const kana = cols[8]?.trim() || ""
       const gender = cols[9]?.trim() || ""
       const birthDate = cols[10]?.trim() || ""
-      const age = Number.parseInt(cols[11]?.trim() || "0")
+      const age = cols[11]?.trim() || ""
       const hospitalName = cols[3]?.trim() || ""
-      const classType = cols[4]?.trim() || ""
-      const teamNumber = Number.parseInt(cols[5]?.trim() || "0")
+      const dayNight = cols[4]?.trim() || ""
+      const teamNumber = cols[5]?.trim() || ""
 
       students.push({
         student_number: studentNumber,
         name,
-        furigana,
+        kana,
         gender,
         birth_date: birthDate,
         age,
-        hospital_name: hospitalName,
-        group_name: `${classType}班${teamNumber}`,
-        class_type: classType,
-        team_number: teamNumber,
+        hospital: hospitalName,
+        day_night: dayNight,
+        group_name: `${dayNight}班${teamNumber}`,
       })
 
       // Parse schedule for each date
       for (let dateIdx = 0; dateIdx < dates.length && 12 + dateIdx < cols.length; dateIdx++) {
         const scheduleValue = cols[12 + dateIdx]?.trim()
         if (scheduleValue && scheduleValue !== "" && scheduleValue !== "0") {
+          let description = ""
+          if (scheduleValue === "学") description = "学校登校日"
+          else if (scheduleValue === "数") description = "数学セミナー"
+          else if (scheduleValue === "〇") description = "病院実習当日"
+          else if (scheduleValue === "半") description = "半日実習"
+          else if (scheduleValue === "オリ") description = "オリエンテーション"
+
           schedules.push({
             student_number: studentNumber,
             schedule_date: dates[dateIdx],
-            schedule_type: scheduleValue,
-            period: 1,
+            symbol: scheduleValue,
+            description,
           })
         }
       }
@@ -104,13 +108,36 @@ export async function importCSVData() {
       throw studentError
     }
 
+    // Get student IDs for schedule linking
+    const { data: insertedStudents, error: fetchError } = await supabase.from("students").select("id, student_number")
+
+    if (fetchError) {
+      console.error("[v0] Failed to fetch students:", fetchError)
+      throw fetchError
+    }
+
+    const studentMap = new Map(insertedStudents?.map((s) => [s.student_number, s.id]) || [])
+
     // Delete existing schedules
     await supabase.from("schedules").delete().neq("id", 0)
 
+    const schedulesWithStudentId = schedules
+      .map((sch) => {
+        const studentId = studentMap.get(sch.student_number)
+        if (!studentId) return null
+        return {
+          student_id: studentId,
+          schedule_date: sch.schedule_date,
+          symbol: sch.symbol,
+          description: sch.description,
+        }
+      })
+      .filter((s) => s !== null)
+
     // Insert schedules in batches
-    if (schedules.length > 0) {
-      for (let i = 0; i < schedules.length; i += 1000) {
-        const batch = schedules.slice(i, i + 1000)
+    if (schedulesWithStudentId.length > 0) {
+      for (let i = 0; i < schedulesWithStudentId.length; i += 1000) {
+        const batch = schedulesWithStudentId.slice(i, i + 1000)
         const { error: scheduleError } = await supabase.from("schedules").insert(batch)
 
         if (scheduleError) {
@@ -122,7 +149,7 @@ export async function importCSVData() {
 
     console.log("[v0] CSV import completed successfully")
 
-    return { success: true, students: students.length, schedules: schedules.length }
+    return { success: true, students: students.length, schedules: schedulesWithStudentId.length }
   } catch (error) {
     console.error("[v0] Import error:", error)
     return { success: false, error: String(error) }
