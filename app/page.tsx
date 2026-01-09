@@ -551,30 +551,9 @@ function HospitalInternshipManagerContent() {
               </Card>
             ) : (
               (() => {
-                // 日付検索がある場合、学生を分類してソート
-                if (searchDate) {
-                  // 病院実習者（〇）と学校登校者（学・数・半・オリ）を分ける
-                  const hospitalStudents: Student[] = []
-                  const schoolStudents: Student[] = []
-
-                  students.forEach((student) => {
-                    const hasHospitalSymbol = student.schedule.some((s) => s.symbol === "〇")
-                    const hasSchoolSymbol = student.schedule.some((s) =>
-                      ["学", "数", "半", "オリ"].includes(s.symbol),
-                    )
-
-                    if (hasHospitalSymbol) {
-                      hospitalStudents.push(student)
-                    } else if (hasSchoolSymbol) {
-                      schoolStudents.push(student)
-                    }
-                    // 休や明などは除外（どちらにも追加しない）
-                  })
-
-                  // 病院実習者を先に、学校登校者を後に並べる
-                  const sortedStudents = [...hospitalStudents, ...schoolStudents]
-
-                  return sortedStudents.map((student) => (
+                // 名前または病院のみで検索している場合は、全員表示
+                if (!searchDate) {
+                  return students.map((student) => (
                     <Card key={student.id} className="border-2">
                       <CardHeader>
                         <div className="flex items-start justify-between">
@@ -627,9 +606,32 @@ function HospitalInternshipManagerContent() {
                       </CardContent>
                     </Card>
                   ))
-                } else {
-                  // 日付検索がない場合は通常通り表示
-                  return students.map((student) => (
+                }
+                
+                // 日付検索がある場合、学生を分類してソート
+                if (searchDate) {
+                  // 病院実習者（〇）と学校登校者（学・数・半・オリ）を分ける
+                  const hospitalStudents: Student[] = []
+                  const schoolStudents: Student[] = []
+
+                  students.forEach((student) => {
+                    const hasHospitalSymbol = student.schedule.some((s) => s.symbol === "〇")
+                    const hasSchoolSymbol = student.schedule.some((s) =>
+                      ["学", "数", "半", "オリ"].includes(s.symbol),
+                    )
+
+                    if (hasHospitalSymbol) {
+                      hospitalStudents.push(student)
+                    } else if (hasSchoolSymbol) {
+                      schoolStudents.push(student)
+                    }
+                    // 休や明などは除外（どちらにも追加しない）
+                  })
+
+                  // 病院実習者を先に、学校登校者を後に並べる
+                  const sortedStudents = [...hospitalStudents, ...schoolStudents]
+
+                  return sortedStudents.map((student) => (
                     <Card key={student.id} className="border-2">
                       <CardHeader>
                         <div className="flex items-start justify-between">
