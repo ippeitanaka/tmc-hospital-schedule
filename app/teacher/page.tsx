@@ -496,45 +496,45 @@ export default function TeacherPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">{student.name}</p>
-                            <p className="text-sm text-muted-foreground">{student.kana} - {student.student_number}</p>
+                            <p className="text-sm text-muted-foreground">{student.kana} - {student.studentNumber}</p>
                           </div>
                           <div className="text-sm font-medium">
-                            現在: {getAttendanceStatusLabel(getAttendanceStatus(student.student_number))}
+                            現在: {getAttendanceStatusLabel(getAttendanceStatus(student.studentNumber))}
                           </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 1)}
-                            onClick={() => updateAttendance(student.student_number, 1)}
+                            className={getAttendanceButtonClass(student.studentNumber, 1)}
+                            onClick={() => updateAttendance(student.studentNumber, 1)}
                           >
                             出席
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 2)}
-                            onClick={() => updateAttendance(student.student_number, 2)}
+                            className={getAttendanceButtonClass(student.studentNumber, 2)}
+                            onClick={() => updateAttendance(student.studentNumber, 2)}
                           >
                             欠席
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 3)}
-                            onClick={() => updateAttendance(student.student_number, 3)}
+                            className={getAttendanceButtonClass(student.studentNumber, 3)}
+                            onClick={() => updateAttendance(student.studentNumber, 3)}
                           >
                             遅刻
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 4)}
-                            onClick={() => updateAttendance(student.student_number, 4)}
+                            className={getAttendanceButtonClass(student.studentNumber, 4)}
+                            onClick={() => updateAttendance(student.studentNumber, 4)}
                           >
                             早退
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 5)}
-                            onClick={() => updateAttendance(student.student_number, 5)}
+                            className={getAttendanceButtonClass(student.studentNumber, 5)}
+                            onClick={() => updateAttendance(student.studentNumber, 5)}
                           >
                             公欠
                           </Button>
