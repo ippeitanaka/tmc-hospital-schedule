@@ -37,9 +37,9 @@ export async function GET(request: Request) {
     let schedulesQuery = supabase.from("schedules").select("*").in("student_id", studentIds).order("schedule_date")
 
     if (date) {
-      // YYYY-MM-DD形式をYYYY/MM/DDに変換
+      // YYYY-MM-DD形式またはYYYY/MM/DD形式の両方に対応
       const formattedDate = date.replace(/-/g, "/")
-      schedulesQuery = schedulesQuery.ilike("schedule_date", `%${formattedDate}%`)
+      schedulesQuery = schedulesQuery.or(`schedule_date.ilike.%${date}%,schedule_date.ilike.%${formattedDate}%`)
     }
 
     const { data: schedules, error: schedulesError } = await schedulesQuery
@@ -55,6 +55,7 @@ export async function GET(request: Request) {
         return {
           id: student.id,
           hospital: student.hospital,
+          day_night: student.day_night,
           dayNight: student.day_night,
           group: student.group_name,
           studentNumber: student.student_number,

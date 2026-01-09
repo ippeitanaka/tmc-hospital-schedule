@@ -112,11 +112,11 @@ export default function TeacherPage() {
 
   const loadStudentsAndAttendance = async () => {
     try {
-      // 日付をMM/DD形式に変換してAPIに渡す
+      // 日付をYYYY/MM/DD形式に変換してAPIに渡す
       const year = selectedDate.substring(0, 4)
-      const month = parseInt(selectedDate.substring(4, 6))
-      const day = parseInt(selectedDate.substring(6, 8))
-      const dateForApi = `${month}/${day}`
+      const month = selectedDate.substring(4, 6)
+      const day = selectedDate.substring(6, 8)
+      const dateForApi = `${year}/${month}/${day}`
 
       const res = await fetch(`/api/students?date=${encodeURIComponent(dateForApi)}`)
       const data = await res.json()
@@ -322,12 +322,12 @@ export default function TeacherPage() {
   // 学校登校者と病院実習者に分類（クラスフィルター適用）
   const schoolStudents = students.filter((s) =>
     s.schedule.some((sch) => sch.symbol === "学") &&
-    selectedClasses.includes(s.day_night)
+    selectedClasses.includes(s.day_night || "")
   )
 
   const hospitalStudents = students.filter((s) =>
     s.schedule.some((sch) => sch.symbol === "〇") &&
-    selectedClasses.includes(s.day_night)
+    selectedClasses.includes(s.day_night || "")
   )
 
   // 病院ごとにグループ化
