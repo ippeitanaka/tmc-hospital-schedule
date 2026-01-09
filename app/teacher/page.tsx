@@ -846,11 +846,25 @@ function VisitsOverview() {
                           })
                           .map((visit, idx) => {
                             // その日に実習している学生を抽出
-                            const studentsOnThisDate = hospitalStudents.filter((student) =>
-                              student.schedule.some(
-                                (sch: any) => sch.symbol === "〇" && sch.date.includes(visit.visit_date)
-                              )
-                            )
+                            console.log("Visit date:", visit.visit_date)
+                            console.log("Hospital students:", hospitalStudents.length)
+                            if (hospitalStudents.length > 0) {
+                              console.log("Sample student schedule:", hospitalStudents[0].schedule)
+                            }
+                            
+                            const studentsOnThisDate = hospitalStudents.filter((student) => {
+                              const hasMatch = student.schedule.some((sch: any) => {
+                                const scheduleDate = sch.date
+                                const visitDate = visit.visit_date
+                                // 日付の形式を柔軟に比較
+                                const match = scheduleDate.includes(visitDate) || scheduleDate.endsWith(visitDate)
+                                console.log(`Comparing: ${scheduleDate} with ${visitDate} = ${match}, symbol: ${sch.symbol}`)
+                                return sch.symbol === "〇" && match
+                              })
+                              return hasMatch
+                            })
+                            
+                            console.log("Students on this date:", studentsOnThisDate.length)
                             
                             return (
                               <div
