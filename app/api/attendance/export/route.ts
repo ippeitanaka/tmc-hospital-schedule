@@ -7,9 +7,22 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const date = searchParams.get("date") // YYYYMMDD形式
     const period = searchParams.get("period")
+    const classes = searchParams.get("classes") // A,B,N形式
 
     const supabase = await getSupabaseServerClient()
-    let query = supabase.from("attendance_records").select("*").order("student_number")
+
+    // クラスフィルタがある場合は、studentsテーブルと結合してフィルタリング
+    let query
+    if (classes) {
+      const classArray = classes.split(",")
+      query = supabase
+        .from("attendance_records")
+        .select("*, students!inner(class_type)")
+        .in("students.class_type", classArray)
+        .order("student_number")
+    } else {
+      query = supabase.from("attendance_records").select("*").order("student_number")
+    }
 
     if (date) {
       query = query.eq("attendance_date", date)
