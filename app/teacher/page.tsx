@@ -33,6 +33,7 @@ import { importCSVData } from "@/app/actions/import-csv-data"
 import { exportDataAsCSV } from "@/app/actions/export-data"
 import { CSVImportDialog } from "@/components/csv-import-dialog"
 import { AttendanceExportDialog } from "@/components/attendance-export-dialog"
+import { CSVDataImportDialog } from "@/components/csv-data-import-dialog"
 
 interface Student {
   id: number
@@ -68,8 +69,6 @@ export default function TeacherPage() {
   const [visitComments, setVisitComments] = useState<Record<string, string>>({})
   const [appPassword, setAppPassword] = useState("")
   const [teacherPassword, setTeacherPassword] = useState("")
-  const [importing, setImporting] = useState(false)
-  const [importMessage, setImportMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const checkAuth = () => {
@@ -251,28 +250,6 @@ export default function TeacherPage() {
   }
 
 
-
-  const handleImport = async () => {
-    setImporting(true)
-    setImportMessage(null)
-
-    try {
-      const result = await importCSVData()
-
-      if (result.success) {
-        setImportMessage(
-          `✓ インポート成功: ${result.students}名の学生と${result.schedules}件のスケジュールをインポートしました`,
-        )
-        setTimeout(() => window.location.reload(), 2000)
-      } else {
-        setImportMessage(`✗ エラー: ${result.error}`)
-      }
-    } catch (error) {
-      setImportMessage(`✗ エラー: ${error instanceof Error ? error.message : "インポートに失敗しました"}`)
-    } finally {
-      setImporting(false)
-    }
-  }
 
   const handleExportData = async () => {
     try {
@@ -662,23 +639,19 @@ export default function TeacherPage() {
             <Card>
               <CardHeader>
                 <CardTitle>データインポート</CardTitle>
-                <CardDescription>CSVファイルから学生データとスケジュールをインポート</CardDescription>
+                <CardDescription>CSVファイルから学生情報またはスケジュールをインポート</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex gap-4">
-                  <CSVImportDialog />
-                  <Button onClick={handleImport} disabled={importing}>
+                <CSVDataImportDialog onImportComplete={() => window.location.reload()}>
+                  <Button>
                     <Upload className="h-4 w-4 mr-2" />
-                    {importing ? "インポート中..." : "データをインポート"}
+                    CSVデータをインポート
                   </Button>
+                </CSVDataImportDialog>
+                <div className="text-sm text-muted-foreground">
+                  <p>※ 学生情報とスケジュール情報の2種類のCSVテンプレートに対応しています</p>
+                  <p>※ テンプレートは data/ フォルダの CSV-TEMPLATE-README.md を参照してください</p>
                 </div>
-                {importMessage && (
-                  <div
-                    className={`p-3 rounded ${importMessage.startsWith("✓") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
-                  >
-                    {importMessage}
-                  </div>
-                )}
               </CardContent>
             </Card>
 
