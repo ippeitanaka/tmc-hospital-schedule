@@ -32,6 +32,7 @@ import { setAuthCookie, removeAuthCookie, isTeacherAuthenticated } from "@/lib/a
 import { importCSVData } from "@/app/actions/import-csv-data"
 import { exportDataAsCSV } from "@/app/actions/export-data"
 import { CSVImportDialog } from "@/components/csv-import-dialog"
+import { AttendanceExportDialog } from "@/components/attendance-export-dialog"
 
 interface Student {
   id: number
@@ -249,15 +250,7 @@ export default function TeacherPage() {
     }
   }
 
-  const handleExportAttendance = async () => {
-    try {
-      const url = `/api/attendance/export?date=${selectedDate}&period=${selectedPeriod}`
-      window.open(url, "_blank")
-    } catch (error) {
-      console.error("エクスポートに失敗:", error)
-      alert("エクスポートに失敗しました")
-    }
-  }
+
 
   const handleImport = async () => {
     setImporting(true)
@@ -476,10 +469,12 @@ export default function TeacherPage() {
                       </Select>
                     </div>
                     <div className="flex items-end">
-                      <Button onClick={handleExportAttendance} variant="outline" className="w-full">
-                        <Download className="h-4 w-4 mr-2" />
-                        出欠CSVエクスポート
-                      </Button>
+                      <AttendanceExportDialog>
+                        <Button variant="outline" className="w-full">
+                          <Download className="h-4 w-4 mr-2" />
+                          出欠CSVエクスポート
+                        </Button>
+                      </AttendanceExportDialog>
                     </div>
                   </div>
                   <div>
