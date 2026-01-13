@@ -3,6 +3,19 @@
 import { createClient } from "@/lib/supabase/server"
 
 /**
+ * CSV値をエスケープ（カンマや改行、ダブルクォートを含む場合）
+ */
+function escapeCsvValue(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return ""
+  const str = String(value)
+  // カンマ、改行、ダブルクォートを含む場合はダブルクォートで囲み、内部のダブルクォートは2つに
+  if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+    return `"${str.replace(/"/g, '""')}"`
+  }
+  return str
+}
+
+/**
  * 統合CSVフォーマットでデータをエクスポート
  * フォーマット: 学籍番号,氏名,ふりがな,性別,生年月日,年齢,病院,クラス,班,日付,記号,説明
  */
@@ -46,11 +59,11 @@ export async function exportUnifiedCSV() {
       
       if (studentSchedules.length === 0) {
         // スケジュールがない場合は学生情報のみ
-        csv += `${student.student_number},${student.name},${student.kana},${student.gender || ""},${student.birth_date || ""},${student.age || ""},${student.hospital},${student.day_night},${student.group_name},,,,\n`
+        csv += `${escapeCsvValue(student.student_number)},${escapeCsvValue(student.name)},${escapeCsvValue(student.kana)},${escapeCsvValue(student.gender)},${escapeCsvValue(student.birth_date)},${escapeCsvValue(student.age)},${escapeCsvValue(student.hospital)},${escapeCsvValue(student.day_night)},${escapeCsvValue(student.group_name)},,,,\n`
       } else {
         // スケジュールごとに1行
         studentSchedules.forEach((schedule) => {
-          csv += `${student.student_number},${student.name},${student.kana},${student.gender || ""},${student.birth_date || ""},${student.age || ""},${student.hospital},${student.day_night},${student.group_name},${schedule.schedule_date},${schedule.symbol},${schedule.description || ""}\n`
+          csv += `${escapeCsvValue(student.student_number)},${escapeCsvValue(student.name)},${escapeCsvValue(student.kana)},${escapeCsvValue(student.gender)},${escapeCsvValue(student.birth_date)},${escapeCsvValue(student.age)},${escapeCsvValue(student.hospital)},${escapeCsvValue(student.day_night)},${escapeCsvValue(student.group_name)},${escapeCsvValue(schedule.schedule_date)},${escapeCsvValue(schedule.symbol)},${escapeCsvValue(schedule.description)}\n`
         })
       }
     })
@@ -93,7 +106,7 @@ export async function exportDataAsCSV() {
 
     // Add student rows
     for (const student of students || []) {
-      csv += `${student.student_number || ""},${student.name || ""},${student.kana || ""},${student.gender || ""},${student.birth_date || ""},${student.age || ""},${student.hospital || ""},${student.day_night || ""},${student.group_name || ""}\n`
+      csv += `${escapeCsvValue(student.student_number)},${escapeCsvValue(student.name)},${escapeCsvValue(student.kana)},${escapeCsvValue(student.gender)},${escapeCsvValue(student.birth_date)},${escapeCsvValue(student.age)},${escapeCsvValue(student.hospital)},${escapeCsvValue(student.day_night)},${escapeCsvValue(student.group_name)}\n`
     }
 
     // Add schedule section
@@ -103,7 +116,7 @@ export async function exportDataAsCSV() {
     // Add schedule rows
     for (const schedule of schedules || []) {
       const studentNumber = (schedule.students as any)?.student_number || ""
-      csv += `${studentNumber},${schedule.schedule_date || ""},${schedule.symbol || ""},${schedule.description || ""}\n`
+      csv += `${escapeCsvValue(studentNumber)},${escapeCsvValue(schedule.schedule_date)},${escapeCsvValue(schedule.symbol)},${escapeCsvValue(schedule.description)}\n`
     }
 
     return { success: true, csv }
