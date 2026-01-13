@@ -161,18 +161,27 @@ export default function TeacherPage() {
 
   const selectAttendance = (studentNumber: string, status: number) => {
     // 一時的に選択状態を保存（データベースにはまだ保存しない）
-    setPendingAttendance((prev) => ({
-      ...prev,
-      [studentNumber]: status,
-    }))
+    console.log('個別選択:', studentNumber, 'ステータス:', status)
+    setPendingAttendance((prev) => {
+      const updated = {
+        ...prev,
+        [studentNumber]: status,
+      }
+      console.log('更新後のpendingAttendance:', updated)
+      return updated
+    })
   }
 
   const applyBulkSelection = () => {
     // 一括選択を一時状態に反映
     const newPending = { ...pendingAttendance }
     schoolStudents.forEach((student) => {
-      newPending[student.student_number] = bulkAttendanceStatus
+      const studentNum = student.student_number || student.studentNumber || ''
+      if (studentNum) {
+        newPending[studentNum] = bulkAttendanceStatus
+      }
     })
+    console.log('一括選択後:', newPending)
     setPendingAttendance(newPending)
   }
 
@@ -589,56 +598,59 @@ export default function TeacherPage() {
 
                     {/* 個別の出席管理 */}
                     <div className="space-y-3">
-                      {schoolStudents.map((student) => (
+                      {schoolStudents.map((student) => {
+                        const studentNum = student.student_number || student.studentNumber || ''
+                        return (
                         <div key={student.id} className="border rounded-lg p-4 space-y-3">
                           <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">{student.name}</p>
-                            <p className="text-sm text-muted-foreground">{student.kana} - {student.student_number}</p>
+                            <p className="text-sm text-muted-foreground">{student.kana} - {studentNum}</p>
                           </div>
                           <div className="text-sm font-medium">
-                            現在: {getAttendanceStatusLabel(getAttendanceStatus(student.student_number))}
+                            現在: {getAttendanceStatusLabel(getAttendanceStatus(studentNum))}
                           </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 1)}
-                            onClick={() => selectAttendance(student.student_number, 1)}
+                            className={getAttendanceButtonClass(studentNum, 1)}
+                            onClick={() => selectAttendance(studentNum, 1)}
                           >
                             出席
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 2)}
-                            onClick={() => selectAttendance(student.student_number, 2)}
+                            className={getAttendanceButtonClass(studentNum, 2)}
+                            onClick={() => selectAttendance(studentNum, 2)}
                           >
                             欠席
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 3)}
-                            onClick={() => selectAttendance(student.student_number, 3)}
+                            className={getAttendanceButtonClass(studentNum, 3)}
+                            onClick={() => selectAttendance(studentNum, 3)}
                           >
                             遅刻
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 4)}
-                            onClick={() => selectAttendance(student.student_number, 4)}
+                            className={getAttendanceButtonClass(studentNum, 4)}
+                            onClick={() => selectAttendance(studentNum, 4)}
                           >
                             早退
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.student_number, 5)}
-                            onClick={() => selectAttendance(student.student_number, 5)}
+                            className={getAttendanceButtonClass(studentNum, 5)}
+                            onClick={() => selectAttendance(studentNum, 5)}
                           >
                             公欠
                           </Button>
                         </div>
                       </div>
-                    ))}
+                      )
+                      })}
                     </div>
                   </div>
                 )}
