@@ -314,10 +314,8 @@ export default function TeacherPage() {
       const result = await exportDataAsCSV()
 
       if (result.success && result.csv) {
-        // UTF-8エンコーディングを明示的に処理
-        const encoder = new TextEncoder()
-        const utf8Data = encoder.encode(result.csv)
-        const blob = new Blob([utf8Data], { type: "text/csv;charset=utf-8;" })
+        // BOM付きUTF-8として保存
+        const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
         const url = URL.createObjectURL(blob)
         const link = document.createElement("a")
         link.href = url
@@ -339,10 +337,8 @@ export default function TeacherPage() {
       const result = await exportUnifiedCSV()
 
       if (result.success && result.csv) {
-        // UTF-8エンコーディングを明示的に処理
-        const encoder = new TextEncoder()
-        const utf8Data = encoder.encode(result.csv)
-        const blob = new Blob([utf8Data], { type: "text/csv;charset=utf-8;" })
+        // BOM付きUTF-8として保存
+        const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
         const url = URL.createObjectURL(blob)
         const link = document.createElement("a")
         link.href = url
@@ -364,10 +360,8 @@ export default function TeacherPage() {
       const result = await generateTemplateCSV()
 
       if (result.success && result.csv) {
-        // UTF-8エンコーディングを明示的に処理
-        const encoder = new TextEncoder()
-        const utf8Data = encoder.encode(result.csv)
-        const blob = new Blob([utf8Data], { type: "text/csv;charset=utf-8;" })
+        // BOM付きUTF-8として保存
+        const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
         const url = URL.createObjectURL(blob)
         const link = document.createElement("a")
         link.href = url
