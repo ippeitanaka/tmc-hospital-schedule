@@ -30,10 +30,12 @@ import {
 import { AuthDialog } from "@/components/auth-dialog"
 import { setAuthCookie, removeAuthCookie, isTeacherAuthenticated } from "@/lib/auth"
 import { importCSVData } from "@/app/actions/import-csv-data"
-import { exportDataAsCSV } from "@/app/actions/export-data"
+import { exportDataAsCSV, exportUnifiedCSV } from "@/app/actions/export-data"
+import { generateTemplateCSV } from "@/app/actions/generate-template-csv"
 import { CSVImportDialog } from "@/components/csv-import-dialog"
 import { AttendanceExportDialog } from "@/components/attendance-export-dialog"
 import { CSVDataImportDialog } from "@/components/csv-data-import-dialog"
+import { UnifiedCSVImportDialog } from "@/components/unified-csv-import-dialog"
 
 interface Student {
   id: number
@@ -312,9 +314,7 @@ export default function TeacherPage() {
       const result = await exportDataAsCSV()
 
       if (result.success && result.csv) {
-        // BOM（Byte Order Mark）を追加してUTF-8エンコーディングを明示
-        const bom = "\uFEFF"
-        const blob = new Blob([bom + result.csv], { type: "text/csv;charset=utf-8;" })
+        const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
         const url = URL.createObjectURL(blob)
         const link = document.createElement("a")
         link.href = url
@@ -328,6 +328,50 @@ export default function TeacherPage() {
       }
     } catch (error) {
       alert(`エクスポートに失敗しました: ${error instanceof Error ? error.message : "不明なエラー"}`)
+    }
+  }
+
+  const handleExportUnifiedCSV = async () => {
+    try {
+      const result = await exportUnifiedCSV()
+
+      if (result.success && result.csv) {
+        const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `統合データ_${new Date().toISOString().split("T")[0]}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      } else {
+        alert(`エクスポートに失敗しました: ${result.error}`)
+      }
+    } catch (error) {
+      alert(`エクスポートに失敗しました: ${error instanceof Error ? error.message : "不明なエラー"}`)
+    }
+  }
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const result = await generateTemplateCSV()
+
+      if (result.success && result.csv) {
+        const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `統合CSV_テンプレート.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      } else {
+        alert(`テンプレートの生成に失敗しました: ${result.error}`)
+      }
+    } catch (error) {
+      alert(`テンプレートの生成に失敗しました: ${error instanceof Error ? error.message : "不明なエラー"}`)
     }
   }
 
@@ -770,15 +814,31 @@ export default function TeacherPage() {
                 <CardDescription>CSVファイルから学生情報またはスケジュールをインポート</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <CSVDataImportDialog onImportComplete={() => window.location.reload()}>
-                  <Button>
-                    <Upload className="h-4 w-4 mr-2" />
-                    CSVデータをインポート
-                  </Button>
-                </CSVDataImportDialog>
-                <div className="text-sm text-muted-foreground">
-                  <p>※ 学生情報とスケジュール情報の2種類のCSVテンプレートに対応しています</p>
-                  <p>※ テンプレートは data/ フォルダの CSV-TEMPLATE-README.md を参照してください</p>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">統合CSVフォーマット（推奨）</h3>
+                  <div className="flex gap-2 flex-wrap">
+                    <UnifiedCSVImportDialog />
+                    <Button variant="outline" onClick={handleDownloadTemplate}>
+                      <Download className="h-4 w-4 mr-2" />
+                      テンプレートダウンロード
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    学生情報とスケジュールを1つのCSVファイルで管理できます
+                  </p>
+                </div>
+                
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-medium mb-2">従来形式（互換性維持）</h3>
+                  <CSVDataImportDialog onImportComplete={() => window.location.reload()}>
+                    <Button variant="outline">
+                      <Upload className="h-4 w-4 mr-2" />
+                      2セクション形式でインポート
+                    </Button>
+                  </CSVDataImportDialog>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    学生情報とスケジュール情報が分かれた従来形式
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -788,11 +848,28 @@ export default function TeacherPage() {
                 <CardTitle>データエクスポート</CardTitle>
                 <CardDescription>現在のデータをCSV形式でエクスポート</CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button onClick={handleExportData}>
-                  <Download className="h-4 w-4 mr-2" />
-                  CSVエクスポート
-                </Button>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">統合CSVフォーマット（推奨）</h3>
+                  <Button onClick={handleExportUnifiedCSV}>
+                    <Download className="h-4 w-4 mr-2" />
+                    統合CSVエクスポート
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    1つのファイルで学生とスケジュールをまとめてエクスポート
+                  </p>
+                </div>
+                
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-medium mb-2">従来形式（互換性維持）</h3>
+                  <Button variant="outline" onClick={handleExportData}>
+                    <Download className="h-4 w-4 mr-2" />
+                    2セクション形式でエクスポート
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    学生情報とスケジュール情報が分かれた従来形式
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
