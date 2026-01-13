@@ -38,6 +38,7 @@ import { CSVDataImportDialog } from "@/components/csv-data-import-dialog"
 interface Student {
   id: number
   student_number: string
+  studentNumber?: string  // APIからのレスポンスではキャメルケース
   name: string
   kana: string
   hospital: string
@@ -558,15 +559,15 @@ export default function TeacherPage() {
                           value={bulkAttendanceStatus.toString()}
                           onValueChange={(value) => setBulkAttendanceStatus(parseInt(value))}
                         >
-                          <SelectTrigger className="w-32 bg-white">
+                          <SelectTrigger className="w-32 bg-white text-gray-900 border-2 border-blue-300">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">出席</SelectItem>
-                            <SelectItem value="2">欠席</SelectItem>
-                            <SelectItem value="3">遅刻</SelectItem>
-                            <SelectItem value="4">早退</SelectItem>
-                            <SelectItem value="5">公欠</SelectItem>
+                          <SelectContent className="bg-white">
+                            <SelectItem value="1" className="cursor-pointer hover:bg-green-50">出席</SelectItem>
+                            <SelectItem value="2" className="cursor-pointer hover:bg-red-50">欠席</SelectItem>
+                            <SelectItem value="3" className="cursor-pointer hover:bg-yellow-50">遅刻</SelectItem>
+                            <SelectItem value="4" className="cursor-pointer hover:bg-orange-50">早退</SelectItem>
+                            <SelectItem value="5" className="cursor-pointer hover:bg-blue-50">公欠</SelectItem>
                           </SelectContent>
                         </Select>
                         <Button
@@ -1033,7 +1034,7 @@ function StudentManagement() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           updates: {
-            student_number: editingStudent.student_number,
+            student_number: editingStudent.studentNumber || editingStudent.student_number,
             name: editingStudent.name,
             kana: editingStudent.kana,
             hospital: editingStudent.hospital,
@@ -1063,7 +1064,8 @@ function StudentManagement() {
     (s) =>
       s.name.includes(searchTerm) ||
       s.kana.includes(searchTerm) ||
-      s.student_number.includes(searchTerm) ||
+      (s.student_number && s.student_number.includes(searchTerm)) ||
+      (s.studentNumber && s.studentNumber.includes(searchTerm)) ||
       s.hospital.includes(searchTerm)
   )
 
@@ -1090,9 +1092,13 @@ function StudentManagement() {
                   <div>
                     <label className="text-xs font-medium">学籍番号</label>
                     <Input
-                      value={editingStudent.student_number}
+                      value={editingStudent.studentNumber || editingStudent.student_number}
                       onChange={(e) =>
-                        setEditingStudent({ ...editingStudent, student_number: e.target.value })
+                        setEditingStudent({ 
+                          ...editingStudent, 
+                          student_number: e.target.value,
+                          studentNumber: e.target.value 
+                        })
                       }
                     />
                   </div>
@@ -1157,7 +1163,7 @@ function StudentManagement() {
                     {student.name} ({student.kana})
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    学籍番号: {student.student_number} | 病院: {student.hospital} | クラス: {student.day_night} |
+                    学籍番号: {student.studentNumber || student.student_number} | 病院: {student.hospital} | クラス: {student.day_night} |
                     班: {student.group}
                   </p>
                 </div>
@@ -1199,8 +1205,12 @@ function ScheduleManagement() {
 
   const loadSchedules = async (student: Student) => {
     try {
-      const res = await fetch(`/api/schedules?studentNumber=${student.student_number}`)
+      // APIからのレスポンスではstudentNumber（キャメルケース）、内部ではstudent_number（スネークケース）
+      const studentNumber = student.studentNumber || student.student_number
+      console.log('Loading schedules for student:', student.name, 'studentNumber:', studentNumber)
+      const res = await fetch(`/api/schedules?studentNumber=${studentNumber}`)
       const data = await res.json()
+      console.log('Schedules loaded:', data.schedules?.length || 0)
       setSchedules(data.schedules || [])
     } catch (error) {
       console.error("スケジュールの読み込みに失敗:", error)
@@ -1263,7 +1273,8 @@ function ScheduleManagement() {
     (s) =>
       s.name.includes(searchTerm) ||
       s.kana.includes(searchTerm) ||
-      s.student_number.includes(searchTerm)
+      (s.student_number && s.student_number.includes(searchTerm)) ||
+      (s.studentNumber && s.studentNumber.includes(searchTerm))
   )
 
   const getScheduleTypeLabel = (type: string) => {
@@ -1314,7 +1325,7 @@ function ScheduleManagement() {
             >
               <p className="font-medium">{student.name}</p>
               <p className="text-sm text-muted-foreground">
-                {student.kana} - {student.student_number}
+                {student.kana} - {student.studentNumber || student.student_number}
               </p>
             </div>
           ))}
@@ -1328,7 +1339,7 @@ function ScheduleManagement() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="font-semibold text-lg">{selectedStudent.name}</p>
               <p className="text-sm text-muted-foreground">
-                学籍番号: {selectedStudent.student_number} | 病院: {selectedStudent.hospital}
+                学籍番号: {selectedStudent.studentNumber || selectedStudent.student_number} | 病院: {selectedStudent.hospital}
               </p>
             </div>
 
