@@ -337,6 +337,9 @@ export default function TeacherPage() {
       const result = await exportUnifiedCSV()
 
       if (result.success && result.csv) {
+        console.log("CSV最初の200文字:", result.csv.substring(0, 200))
+        console.log("CSV文字コード（最初の10文字）:", Array.from(result.csv.substring(0, 10)).map(c => c.charCodeAt(0)))
+        
         // BOM付きUTF-8として保存
         const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
         const url = URL.createObjectURL(blob)
