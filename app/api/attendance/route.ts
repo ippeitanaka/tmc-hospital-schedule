@@ -40,7 +40,43 @@ export async function GET(request: Request) {
 // 出席記録を追加・更新
 export async function POST(request: Request) {
   try {
-    const { studentNumber, date, period, status } = await request.json()
+    const body = await request.json()
+    
+    // 一括登録の場合
+    if (body.bulkRecords) {
+      const { bulkRecords } = body
+      
+      if (!Array.isArray(bulkRecords) || bulkRecords.length === 0) {
+        return NextResponse.json({ error: "有効なレコードがありません" }, { status: 400 })
+      }
+
+      const supabase = await getSupabaseServerClient()
+      
+      // 一括upsert用のデータを準備
+      const recordsToUpsert = bulkRecords.map((record: any) => ({
+        student_number: record.studentNumber,
+        attendance_date: record.date,
+        period: record.period,
+        status: record.status,
+        updated_at: new Date().toISOString(),
+      }))
+
+      const { data, error } = await supabase
+        .from("attendance_records")
+        .upsert(recordsToUpsert, {
+          onConflict: "student_number,attendance_date,period",
+        })
+        .select()
+
+      if (error) {
+        throw error
+      }
+
+      return NextResponse.json({ records: data, count: data?.length || 0 })
+    }
+
+    // 個別登録の場合（既存の処理）
+    const { studentNumber, date, period, status } = body
 
     if (!studentNumber || !date || period === undefined || status === undefined) {
       return NextResponse.json({ error: "必須パラメータが不足しています" }, { status: 400 })

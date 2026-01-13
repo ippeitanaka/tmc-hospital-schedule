@@ -43,6 +43,9 @@ interface Student {
   hospital: string
   day_night: string
   group: string
+  gender?: string
+  birth_date?: string
+  age?: number
   schedule: Array<{
     date: string
     symbol: string
@@ -69,6 +72,8 @@ export default function TeacherPage() {
   const [visitComments, setVisitComments] = useState<Record<string, string>>({})
   const [appPassword, setAppPassword] = useState("")
   const [teacherPassword, setTeacherPassword] = useState("")
+  const [bulkAttendanceStatus, setBulkAttendanceStatus] = useState<number>(1)
+  const [isBulkRegistering, setIsBulkRegistering] = useState(false)
 
   useEffect(() => {
     const checkAuth = () => {
@@ -179,6 +184,55 @@ export default function TeacherPage() {
     }
   }
 
+  const bulkRegisterAttendance = async () => {
+    if (schoolStudents.length === 0) {
+      alert("登録する学生がいません")
+      return
+    }
+
+    if (!confirm(`学校登校者 ${schoolStudents.length}名を「${getAttendanceStatusLabel(bulkAttendanceStatus)}」で一括登録しますか?`)) {
+      return
+    }
+
+    setIsBulkRegistering(true)
+    try {
+      const bulkRecords = schoolStudents.map((student) => ({
+        studentNumber: student.student_number,
+        date: selectedDate,
+        period: selectedPeriod,
+        status: bulkAttendanceStatus,
+      }))
+
+      const response = await fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bulkRecords }),
+      })
+
+      if (response.ok) {
+        // ローカルステートを一括更新
+        const newRecords = { ...attendanceRecords }
+        schoolStudents.forEach((student) => {
+          newRecords[student.student_number] = {
+            student_number: student.student_number,
+            attendance_date: selectedDate,
+            period: selectedPeriod,
+            status: bulkAttendanceStatus,
+          }
+        })
+        setAttendanceRecords(newRecords)
+        alert(`${schoolStudents.length}名の出席を一括登録しました`)
+      } else {
+        throw new Error("一括登録に失敗しました")
+      }
+    } catch (error) {
+      console.error("一括登録エラー:", error)
+      alert("一括登録に失敗しました")
+    } finally {
+      setIsBulkRegistering(false)
+    }
+  }
+
   const toggleVisitRecord = async (hospital: string) => {
     const month = parseInt(selectedDate.substring(4, 6))
     const day = parseInt(selectedDate.substring(6, 8))
@@ -256,7 +310,9 @@ export default function TeacherPage() {
       const result = await exportDataAsCSV()
 
       if (result.success && result.csv) {
-        const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" })
+        // BOM（Byte Order Mark）を追加してUTF-8エンコーディングを明示
+        const bom = "\uFEFF"
+        const blob = new Blob([bom + result.csv], { type: "text/csv;charset=utf-8;" })
         const url = URL.createObjectURL(blob)
         const link = document.createElement("a")
         link.href = url
@@ -493,57 +549,92 @@ export default function TeacherPage() {
                 {schoolStudents.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">該当する学生がいません</p>
                 ) : (
-                  <div className="space-y-3">
-                    {schoolStudents.map((student) => (
-                      <div key={student.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex items-center justify-between">
+                  <div className="space-y-4">
+                    {/* 一括登録コントロール */}
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <label className="text-sm font-semibold text-blue-900">一括登録:</label>
+                        <Select
+                          value={bulkAttendanceStatus.toString()}
+                          onValueChange={(value) => setBulkAttendanceStatus(parseInt(value))}
+                        >
+                          <SelectTrigger className="w-32 bg-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">出席</SelectItem>
+                            <SelectItem value="2">欠席</SelectItem>
+                            <SelectItem value="3">遅刻</SelectItem>
+                            <SelectItem value="4">早退</SelectItem>
+                            <SelectItem value="5">公欠</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          onClick={bulkRegisterAttendance}
+                          disabled={isBulkRegistering}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                        >
+                          {isBulkRegistering ? "登録中..." : `一括登録 (${schoolStudents.length}名)`}
+                        </Button>
+                        <span className="text-sm text-blue-700">
+                          ※ 学校登校者全員を選択した状態で登録します
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 個別の出席管理 */}
+                    <div className="space-y-3">
+                      {schoolStudents.map((student) => (
+                        <div key={student.id} className="border rounded-lg p-4 space-y-3">
+                          <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">{student.name}</p>
-                            <p className="text-sm text-muted-foreground">{student.kana} - {student.studentNumber}</p>
+                            <p className="text-sm text-muted-foreground">{student.kana} - {student.student_number}</p>
                           </div>
                           <div className="text-sm font-medium">
-                            現在: {getAttendanceStatusLabel(getAttendanceStatus(student.studentNumber))}
+                            現在: {getAttendanceStatusLabel(getAttendanceStatus(student.student_number))}
                           </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.studentNumber, 1)}
-                            onClick={() => updateAttendance(student.studentNumber, 1)}
+                            className={getAttendanceButtonClass(student.student_number, 1)}
+                            onClick={() => updateAttendance(student.student_number, 1)}
                           >
                             出席
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.studentNumber, 2)}
-                            onClick={() => updateAttendance(student.studentNumber, 2)}
+                            className={getAttendanceButtonClass(student.student_number, 2)}
+                            onClick={() => updateAttendance(student.student_number, 2)}
                           >
                             欠席
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.studentNumber, 3)}
-                            onClick={() => updateAttendance(student.studentNumber, 3)}
+                            className={getAttendanceButtonClass(student.student_number, 3)}
+                            onClick={() => updateAttendance(student.student_number, 3)}
                           >
                             遅刻
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.studentNumber, 4)}
-                            onClick={() => updateAttendance(student.studentNumber, 4)}
+                            className={getAttendanceButtonClass(student.student_number, 4)}
+                            onClick={() => updateAttendance(student.student_number, 4)}
                           >
                             早退
                           </Button>
                           <Button
                             size="sm"
-                            className={getAttendanceButtonClass(student.studentNumber, 5)}
-                            onClick={() => updateAttendance(student.studentNumber, 5)}
+                            className={getAttendanceButtonClass(student.student_number, 5)}
+                            onClick={() => updateAttendance(student.student_number, 5)}
                           >
                             公欠
                           </Button>
                         </div>
                       </div>
                     ))}
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -636,6 +727,26 @@ export default function TeacherPage() {
 
           {/* データ管理タブ */}
           <TabsContent value="data" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>学生情報管理</CardTitle>
+                <CardDescription>学生の基本情報を編集・管理</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <StudentManagement />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>スケジュール編集</CardTitle>
+                <CardDescription>各学生の病院実習スケジュールを編集（日程変更・欠席登録）</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScheduleManagement />
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>データインポート</CardTitle>
@@ -886,6 +997,392 @@ function VisitsOverview() {
             )
           })
       )}
+    </div>
+  )
+}
+
+// 学生情報管理コンポーネント
+function StudentManagement() {
+  const [students, setStudents] = useState<Student[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+
+  useEffect(() => {
+    loadStudents()
+  }, [])
+
+  const loadStudents = async () => {
+    try {
+      const res = await fetch("/api/students")
+      const data = await res.json()
+      setStudents(data.students || [])
+      setLoading(false)
+    } catch (error) {
+      console.error("学生データの読み込みに失敗:", error)
+      setLoading(false)
+    }
+  }
+
+  const saveStudent = async () => {
+    if (!editingStudent) return
+
+    try {
+      const response = await fetch(`/api/students?id=${editingStudent.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          updates: {
+            student_number: editingStudent.student_number,
+            name: editingStudent.name,
+            kana: editingStudent.kana,
+            hospital: editingStudent.hospital,
+            gender: editingStudent.gender || "",
+            birth_date: editingStudent.birth_date || "",
+            age: editingStudent.age || 0,
+            day_night: editingStudent.day_night,
+            group_name: editingStudent.group || "",
+          },
+        }),
+      })
+
+      if (response.ok) {
+        alert("学生情報を更新しました")
+        setEditingStudent(null)
+        loadStudents()
+      } else {
+        throw new Error("更新に失敗しました")
+      }
+    } catch (error) {
+      console.error("学生情報の更新に失敗:", error)
+      alert("学生情報の更新に失敗しました")
+    }
+  }
+
+  const filteredStudents = students.filter(
+    (s) =>
+      s.name.includes(searchTerm) ||
+      s.kana.includes(searchTerm) ||
+      s.student_number.includes(searchTerm) ||
+      s.hospital.includes(searchTerm)
+  )
+
+  if (loading) {
+    return <div className="text-center py-4">読み込み中...</div>
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Input
+          placeholder="学生名、ふりがな、学籍番号、病院名で検索..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2 max-h-[500px] overflow-y-auto">
+        {filteredStudents.map((student) => (
+          <div key={student.id} className="border rounded-lg p-4">
+            {editingStudent?.id === student.id ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium">学籍番号</label>
+                    <Input
+                      value={editingStudent.student_number}
+                      onChange={(e) =>
+                        setEditingStudent({ ...editingStudent, student_number: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">氏名</label>
+                    <Input
+                      value={editingStudent.name}
+                      onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">ふりがな</label>
+                    <Input
+                      value={editingStudent.kana}
+                      onChange={(e) => setEditingStudent({ ...editingStudent, kana: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">病院名</label>
+                    <Input
+                      value={editingStudent.hospital}
+                      onChange={(e) => setEditingStudent({ ...editingStudent, hospital: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">クラス</label>
+                    <Select
+                      value={editingStudent.day_night}
+                      onValueChange={(value) => setEditingStudent({ ...editingStudent, day_night: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">Aクラス</SelectItem>
+                        <SelectItem value="B">Bクラス</SelectItem>
+                        <SelectItem value="N">Nクラス</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">班</label>
+                    <Input
+                      value={editingStudent.group}
+                      onChange={(e) => setEditingStudent({ ...editingStudent, group: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={saveStudent} size="sm" className="bg-green-600 hover:bg-green-700">
+                    保存
+                  </Button>
+                  <Button onClick={() => setEditingStudent(null)} size="sm" variant="outline">
+                    キャンセル
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">
+                    {student.name} ({student.kana})
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    学籍番号: {student.student_number} | 病院: {student.hospital} | クラス: {student.day_night} |
+                    班: {student.group}
+                  </p>
+                </div>
+                <Button onClick={() => setEditingStudent(student)} size="sm" variant="outline">
+                  編集
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// スケジュール管理コンポーネント
+function ScheduleManagement() {
+  const [students, setStudents] = useState<Student[]>([])
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [schedules, setSchedules] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+
+  useEffect(() => {
+    loadStudents()
+  }, [])
+
+  const loadStudents = async () => {
+    try {
+      const res = await fetch("/api/students")
+      const data = await res.json()
+      setStudents(data.students || [])
+      setLoading(false)
+    } catch (error) {
+      console.error("学生データの読み込みに失敗:", error)
+      setLoading(false)
+    }
+  }
+
+  const loadSchedules = async (student: Student) => {
+    try {
+      const res = await fetch(`/api/schedules?studentNumber=${student.student_number}`)
+      const data = await res.json()
+      setSchedules(data.schedules || [])
+    } catch (error) {
+      console.error("スケジュールの読み込みに失敗:", error)
+    }
+  }
+
+  const selectStudent = (student: Student) => {
+    setSelectedStudent(student)
+    loadSchedules(student)
+  }
+
+  const updateScheduleType = async (scheduleId: number, newType: string) => {
+    try {
+      const response = await fetch("/api/schedules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: scheduleId,
+          symbol: newType,
+        }),
+      })
+
+      if (response.ok) {
+        alert("スケジュールを更新しました")
+        if (selectedStudent) {
+          loadSchedules(selectedStudent)
+        }
+      } else {
+        throw new Error("更新に失敗しました")
+      }
+    } catch (error) {
+      console.error("スケジュールの更新に失敗:", error)
+      alert("スケジュールの更新に失敗しました")
+    }
+  }
+
+  const markAsAbsent = async (scheduleId: number) => {
+    if (!confirm("このスケジュールを欠席として記録しますか?")) return
+
+    try {
+      const response = await fetch(`/api/schedules?id=${scheduleId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        alert("欠席として記録しました")
+        if (selectedStudent) {
+          loadSchedules(selectedStudent)
+        }
+      } else {
+        throw new Error("記録に失敗しました")
+      }
+    } catch (error) {
+      console.error("欠席記録に失敗:", error)
+      alert("欠席記録に失敗しました")
+    }
+  }
+
+  const filteredStudents = students.filter(
+    (s) =>
+      s.name.includes(searchTerm) ||
+      s.kana.includes(searchTerm) ||
+      s.student_number.includes(searchTerm)
+  )
+
+  const getScheduleTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      "〇": "病院実習",
+      学: "学校登校",
+      欠: "欠席",
+      休: "休み",
+    }
+    return labels[type] || type
+  }
+
+  const getScheduleTypeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      "〇": "bg-green-100 text-green-700 border-green-300",
+      学: "bg-blue-100 text-blue-700 border-blue-300",
+      欠: "bg-red-100 text-red-700 border-red-300",
+      休: "bg-gray-100 text-gray-700 border-gray-300",
+    }
+    return colors[type] || "bg-gray-100 text-gray-700 border-gray-300"
+  }
+
+  if (loading) {
+    return <div className="text-center py-4">読み込み中...</div>
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* 学生リスト */}
+      <div className="space-y-4">
+        <div>
+          <label className="text-sm font-medium mb-2 block">学生を選択</label>
+          <Input
+            placeholder="学生名、ふりがな、学籍番号で検索..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          {filteredStudents.map((student) => (
+            <div
+              key={student.id}
+              className={`border rounded-lg p-3 cursor-pointer hover:bg-accent/50 transition-colors ${
+                selectedStudent?.id === student.id ? "bg-accent border-primary" : ""
+              }`}
+              onClick={() => selectStudent(student)}
+            >
+              <p className="font-medium">{student.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {student.kana} - {student.student_number}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* スケジュール編集 */}
+      <div>
+        {selectedStudent ? (
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="font-semibold text-lg">{selectedStudent.name}</p>
+              <p className="text-sm text-muted-foreground">
+                学籍番号: {selectedStudent.student_number} | 病院: {selectedStudent.hospital}
+              </p>
+            </div>
+
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {schedules.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">スケジュールがありません</p>
+              ) : (
+                schedules.map((schedule) => (
+                  <div key={schedule.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{schedule.schedule_date}</p>
+                        <span
+                          className={`inline-block px-2 py-1 rounded text-xs font-medium border ${getScheduleTypeColor(schedule.symbol)}`}
+                        >
+                          {getScheduleTypeLabel(schedule.symbol)}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Select
+                          value={schedule.symbol}
+                          onValueChange={(value) => updateScheduleType(schedule.id, value)}
+                        >
+                          <SelectTrigger className="w-24 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="〇">実習</SelectItem>
+                            <SelectItem value="学">登校</SelectItem>
+                            <SelectItem value="欠">欠席</SelectItem>
+                            <SelectItem value="休">休み</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => markAsAbsent(schedule.id)}
+                          className="h-8"
+                        >
+                          欠席
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center text-muted-foreground py-12">
+            左から学生を選択してください
+          </div>
+        )}
+      </div>
     </div>
   )
 }
