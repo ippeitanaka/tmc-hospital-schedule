@@ -75,6 +75,7 @@ export default function TeacherPage() {
   const [teacherPassword, setTeacherPassword] = useState("")
   const [bulkAttendanceStatus, setBulkAttendanceStatus] = useState<number>(1)
   const [isBulkRegistering, setIsBulkRegistering] = useState(false)
+  const [pendingAttendance, setPendingAttendance] = useState<Record<string, number>>({})
 
   useEffect(() => {
     const checkAuth = () => {
@@ -94,6 +95,8 @@ export default function TeacherPage() {
   useEffect(() => {
     if (authenticated && selectedDate) {
       loadStudentsAndAttendance()
+      // 日付や時限が変わったら一時選択状態をクリア
+      setPendingAttendance({})
     }
   }, [authenticated, selectedDate, selectedPeriod])
 
@@ -156,52 +159,40 @@ export default function TeacherPage() {
     }
   }
 
-  const updateAttendance = async (studentNumber: string, status: number) => {
-    try {
-      await fetch("/api/attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentNumber,
-          date: selectedDate,
-          period: selectedPeriod,
-          status,
-        }),
-      })
-
-      // ローカルステートを更新
-      setAttendanceRecords((prev) => ({
-        ...prev,
-        [studentNumber]: {
-          student_number: studentNumber,
-          attendance_date: selectedDate,
-          period: selectedPeriod,
-          status,
-        },
-      }))
-    } catch (error) {
-      console.error("出席記録の更新に失敗:", error)
-      alert("出席記録の更新に失敗しました")
-    }
+  const selectAttendance = (studentNumber: string, status: number) => {
+    // 一時的に選択状態を保存（データベースにはまだ保存しない）
+    setPendingAttendance((prev) => ({
+      ...prev,
+      [studentNumber]: status,
+    }))
   }
 
-  const bulkRegisterAttendance = async () => {
-    if (schoolStudents.length === 0) {
-      alert("登録する学生がいません")
+  const applyBulkSelection = () => {
+    // 一括選択を一時状態に反映
+    const newPending = { ...pendingAttendance }
+    schoolStudents.forEach((student) => {
+      newPending[student.student_number] = bulkAttendanceStatus
+    })
+    setPendingAttendance(newPending)
+  }
+
+  const saveAllAttendance = async () => {
+    if (Object.keys(pendingAttendance).length === 0) {
+      alert("登録する出席情報がありません")
       return
     }
 
-    if (!confirm(`学校登校者 ${schoolStudents.length}名を「${getAttendanceStatusLabel(bulkAttendanceStatus)}」で一括登録しますか?`)) {
+    if (!confirm(`${Object.keys(pendingAttendance).length}名の出席情報を登録しますか？`)) {
       return
     }
 
     setIsBulkRegistering(true)
     try {
-      const bulkRecords = schoolStudents.map((student) => ({
-        studentNumber: student.student_number,
+      const bulkRecords = Object.entries(pendingAttendance).map(([studentNumber, status]) => ({
+        studentNumber,
         date: selectedDate,
         period: selectedPeriod,
-        status: bulkAttendanceStatus,
+        status,
       }))
 
       const response = await fetch("/api/attendance", {
@@ -211,24 +202,25 @@ export default function TeacherPage() {
       })
 
       if (response.ok) {
-        // ローカルステートを一括更新
+        // ローカルステートを更新
         const newRecords = { ...attendanceRecords }
-        schoolStudents.forEach((student) => {
-          newRecords[student.student_number] = {
-            student_number: student.student_number,
+        Object.entries(pendingAttendance).forEach(([studentNumber, status]) => {
+          newRecords[studentNumber] = {
+            student_number: studentNumber,
             attendance_date: selectedDate,
             period: selectedPeriod,
-            status: bulkAttendanceStatus,
+            status,
           }
         })
         setAttendanceRecords(newRecords)
-        alert(`${schoolStudents.length}名の出席を一括登録しました`)
+        setPendingAttendance({}) // 一時状態をクリア
+        alert(`${Object.keys(pendingAttendance).length}名の出席を登録しました`)
       } else {
-        throw new Error("一括登録に失敗しました")
+        throw new Error("登録に失敗しました")
       }
     } catch (error) {
-      console.error("一括登録エラー:", error)
-      alert("一括登録に失敗しました")
+      console.error("出席登録エラー:", error)
+      alert("出席登録に失敗しました")
     } finally {
       setIsBulkRegistering(false)
     }
@@ -349,7 +341,8 @@ export default function TeacherPage() {
   }
 
   const getAttendanceStatus = (studentNumber: string) => {
-    return attendanceRecords[studentNumber]?.status
+    // 一時選択があればそれを優先、なければ保存済みのデータ
+    return pendingAttendance[studentNumber] ?? attendanceRecords[studentNumber]?.status
   }
 
   const getAttendanceStatusLabel = (status: number | undefined) => {
@@ -551,10 +544,10 @@ export default function TeacherPage() {
                   <p className="text-center text-muted-foreground py-8">該当する学生がいません</p>
                 ) : (
                   <div className="space-y-4">
-                    {/* 一括登録コントロール */}
+                    {/* 一括選択コントロール */}
                     <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <label className="text-sm font-semibold text-blue-900">一括登録:</label>
+                        <label className="text-sm font-semibold text-blue-900">一括選択:</label>
                         <Select
                           value={bulkAttendanceStatus.toString()}
                           onValueChange={(value) => setBulkAttendanceStatus(parseInt(value))}
@@ -571,16 +564,27 @@ export default function TeacherPage() {
                           </SelectContent>
                         </Select>
                         <Button
-                          onClick={bulkRegisterAttendance}
-                          disabled={isBulkRegistering}
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                          onClick={applyBulkSelection}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
-                          {isBulkRegistering ? "登録中..." : `一括登録 (${schoolStudents.length}名)`}
+                          全員を選択 ({schoolStudents.length}名)
                         </Button>
                         <span className="text-sm text-blue-700">
-                          ※ 学校登校者全員を選択した状態で登録します
+                          ※ 選択後、個別に変更してから「登録」ボタンで保存
                         </span>
                       </div>
+                    </div>
+
+                    {/* 登録ボタン */}
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={saveAllAttendance}
+                        disabled={isBulkRegistering || Object.keys(pendingAttendance).length === 0}
+                        className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-2"
+                        size="lg"
+                      >
+                        {isBulkRegistering ? "登録中..." : `登録 (${Object.keys(pendingAttendance).length}名)`}
+                      </Button>
                     </div>
 
                     {/* 個別の出席管理 */}
@@ -600,35 +604,35 @@ export default function TeacherPage() {
                           <Button
                             size="sm"
                             className={getAttendanceButtonClass(student.student_number, 1)}
-                            onClick={() => updateAttendance(student.student_number, 1)}
+                            onClick={() => selectAttendance(student.student_number, 1)}
                           >
                             出席
                           </Button>
                           <Button
                             size="sm"
                             className={getAttendanceButtonClass(student.student_number, 2)}
-                            onClick={() => updateAttendance(student.student_number, 2)}
+                            onClick={() => selectAttendance(student.student_number, 2)}
                           >
                             欠席
                           </Button>
                           <Button
                             size="sm"
                             className={getAttendanceButtonClass(student.student_number, 3)}
-                            onClick={() => updateAttendance(student.student_number, 3)}
+                            onClick={() => selectAttendance(student.student_number, 3)}
                           >
                             遅刻
                           </Button>
                           <Button
                             size="sm"
                             className={getAttendanceButtonClass(student.student_number, 4)}
-                            onClick={() => updateAttendance(student.student_number, 4)}
+                            onClick={() => selectAttendance(student.student_number, 4)}
                           >
                             早退
                           </Button>
                           <Button
                             size="sm"
                             className={getAttendanceButtonClass(student.student_number, 5)}
-                            onClick={() => updateAttendance(student.student_number, 5)}
+                            onClick={() => selectAttendance(student.student_number, 5)}
                           >
                             公欠
                           </Button>
@@ -1337,8 +1341,8 @@ function ScheduleManagement() {
         {selectedStudent ? (
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="font-semibold text-lg">{selectedStudent.name}</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-semibold text-lg text-gray-900">{selectedStudent.name}</p>
+              <p className="text-sm text-gray-700">
                 学籍番号: {selectedStudent.studentNumber || selectedStudent.student_number} | 病院: {selectedStudent.hospital}
               </p>
             </div>
