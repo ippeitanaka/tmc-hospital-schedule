@@ -11,8 +11,11 @@ export const metadata: Metadata = {
   title: "TMC救急救命士学科 病院実習スケジュール",
   description: "TMC病院実習スケジュール・巡回記録管理システム",
   generator: "v0.app",
+  manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/icon.svg",
+    icon: [{ url: "/病院実習.png", type: "image/png" }],
+    shortcut: "/病院実習.png",
+    apple: [{ url: "/病院実習.png", type: "image/png" }],
   },
 }
 
