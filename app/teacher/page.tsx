@@ -27,8 +27,7 @@ import {
   CheckCircle2,
   MessageSquare,
 } from "lucide-react"
-import { AuthDialog } from "@/components/auth-dialog"
-import { setAuthCookie, removeAuthCookie, isTeacherAuthenticated } from "@/lib/auth"
+import { removeAuthCookie } from "@/lib/auth"
 import { importCSVData } from "@/app/actions/import-csv-data"
 import { exportDataAsCSV, exportUnifiedCSV } from "@/app/actions/export-data"
 import { generateTemplateCSV } from "@/app/actions/generate-template-csv"
@@ -65,8 +64,6 @@ interface AttendanceRecord {
 
 export default function TeacherPage() {
   const router = useRouter()
-  const [authenticated, setAuthenticated] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedPeriod, setSelectedPeriod] = useState<number>(1)
   const [selectedClasses, setSelectedClasses] = useState<string[]>(["A", "B", "N"])
@@ -80,14 +77,6 @@ export default function TeacherPage() {
   const [pendingAttendance, setPendingAttendance] = useState<Record<string, number>>({})
 
   useEffect(() => {
-    const checkAuth = () => {
-      const isAuth = isTeacherAuthenticated()
-      setAuthenticated(isAuth)
-      setLoading(false)
-    }
-
-    checkAuth()
-
     // 今日の日付をデフォルトに設定（YYYYMMDD形式）
     const today = new Date()
     const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`
@@ -95,22 +84,16 @@ export default function TeacherPage() {
   }, [])
 
   useEffect(() => {
-    if (authenticated && selectedDate) {
+    if (selectedDate) {
       loadStudentsAndAttendance()
       // 日付や時限が変わったら一時選択状態をクリア
       setPendingAttendance({})
     }
-  }, [authenticated, selectedDate, selectedPeriod])
-
-  const handleAuth = () => {
-    setAuthCookie("admin_auth", "true")
-    setAuthenticated(true)
-  }
+  }, [selectedDate, selectedPeriod])
 
   const handleLogout = () => {
     removeAuthCookie("admin_auth")
-    setAuthenticated(false)
-    router.push("/")
+    router.push("/admin/login")
   }
 
   const toggleClass = (classValue: string) => {
@@ -468,10 +451,6 @@ export default function TeacherPage() {
         </div>
       </div>
     )
-  }
-
-  if (!authenticated) {
-    return <AuthDialog open={true} onSuccess={handleAuth} type="teacher" title="教員用ページ" description="教員用パスワードを入力してください" />
   }
 
   return (
