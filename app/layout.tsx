@@ -13,9 +13,9 @@ export const metadata: Metadata = {
   generator: "v0.app",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [{ url: "/病院実習.png", type: "image/png" }],
-    shortcut: "/病院実習.png",
-    apple: [{ url: "/病院実習.png", type: "image/png" }],
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    shortcut: "/icon.png",
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
   },
 }
 

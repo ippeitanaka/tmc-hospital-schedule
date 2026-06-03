@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#d50012",
     icons: [
       {
-        src: "/病院実習.png",
+        src: "/icon.png",
         sizes: "2048x2048",
         type: "image/png",
       },
